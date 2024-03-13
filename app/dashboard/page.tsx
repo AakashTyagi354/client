@@ -79,100 +79,95 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div>
-      <WidthWrapper>
-        <Tabs defaultValue="account" className="w-[80%]">
-          <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="doctors">Doctors</TabsTrigger>
-          </TabsList>
-          <TabsContent value="users">
-            <Table>
-              <TableCaption>A list of all the users on delma.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Username</TableHead>
 
-                  <TableHead className="text-right">Email</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((ele: { name: string; email: string }, idx) => (
-                  <TableRow key={idx}>
-                    <TableHead className="w-[100px]">{ele.name}</TableHead>
-                    <TableHead className="text-right">{ele.email}</TableHead>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TabsContent>
-          <TabsContent value="doctors">
-            <Table>
-              <TableCaption>A list of all the doctors on delma.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>specialization</TableHead>
-                  <TableHead>experience</TableHead>
-                  <TableHead>feesPerCunsaltation</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {doctors.map(
-                  (
-                    ele: {
-                      firstName: string;
-                      email: string;
-                      status: string;
-                      _id: string;
-                    },
-                    idx
-                  ) => (
-                    <TableRow key={idx}>
-                      <TableHead className="w-[100px]">
-                        {ele.firstName}
-                      </TableHead>
-                      <TableHead>{ele.email}</TableHead>
-                      <TableHead>{ele.specialization}</TableHead>
-                      <TableHead>{ele.experience}</TableHead>
-                      <TableHead>{ele.feesPerCunsaltation}</TableHead>
-                      <TableHead className="text-right">
-                        {ele.status === "pendling" ? (
-                          <>
-                            <Button
-                              variant={"destructive"}
-                              onClick={() => handleDecotrStatus(ele._id)}
-                            >
-                              {ele.status}
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-green-600">Addroved</p>
-                          </>
-                        )}
-                      </TableHead>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </TabsContent>
-        </Tabs>
-      </WidthWrapper>
-    </div>
+    <div>Dashboard</div>
+    // <div>
+     
+    //     <Tabs defaultValue="account" className="w-[80%] bg-red-300">
+    //       <TabsList>
+    //         <TabsTrigger value="users">Users</TabsTrigger>
+    //         <TabsTrigger value="doctors">Doctors</TabsTrigger>
+    //       </TabsList>
+    //       <TabsContent value="users">
+    //         <Table>
+    //           <TableCaption>A list of all the users on delma.</TableCaption>
+    //           <TableHeader>
+    //             <TableRow>
+    //               <TableHead className="w-[100px]">Username</TableHead>
+
+    //               <TableHead className="text-right">Email</TableHead>
+    //             </TableRow>
+    //           </TableHeader>
+    //           <TableBody>
+    //             {users.map((ele: { name: string; email: string }, idx) => (
+    //               <TableRow key={idx}>
+    //                 <TableHead className="w-[100px]">{ele.name}</TableHead>
+    //                 <TableHead className="text-right">{ele.email}</TableHead>
+    //               </TableRow>
+    //             ))}
+    //           </TableBody>
+    //         </Table>
+    //       </TabsContent>
+    //       <TabsContent value="doctors">
+            // <Table>
+            //   <TableCaption>A list of all the doctors on delma.</TableCaption>
+            //   <TableHeader>
+            //     <TableRow>
+            //       <TableHead className="w-[100px]">Username</TableHead>
+            //       <TableHead>Email</TableHead>
+            //       <TableHead>specialization</TableHead>
+            //       <TableHead>experience</TableHead>
+            //       <TableHead>feesPerCunsaltation</TableHead>
+            //       <TableHead className="text-right">Status</TableHead>
+            //     </TableRow>
+            //   </TableHeader>
+            //   <TableBody>
+            //     {doctors.map(
+            //       (
+            //         ele: {
+            //           firstName: string;
+            //           email: string;
+            //           status: string;
+            //           _id: string;
+            //           specialization: string;
+            //           feesPerCunsaltation: number;
+            //           experience: number;
+            //         },
+            //         idx
+            //       ) => (
+            //         <TableRow key={idx}>
+            //           <TableHead className="w-[100px]">
+            //             {ele.firstName}
+            //           </TableHead>
+            //           <TableHead>{ele.email}</TableHead>
+            //           <TableHead>{ele.specialization}</TableHead>
+            //           <TableHead>{ele.experience}</TableHead>
+            //           <TableHead>{ele.feesPerCunsaltation}</TableHead>
+            //           <TableHead className="text-right">
+            //             {ele.status === "pendling" ? (
+            //               <>
+            //                 <Button
+            //                   variant={"destructive"}
+            //                   onClick={() => handleDecotrStatus(ele._id)}
+            //                 >
+            //                   {ele.status}
+            //                 </Button>
+            //               </>
+            //             ) : (
+            //               <>
+            //                 <p className="text-green-600">Addroved</p>
+            //               </>
+            //             )}
+            //           </TableHead>
+            //         </TableRow>
+            //       )
+            //     )}
+            //   </TableBody>
+            // </Table>
+    //       </TabsContent>
+    //     </Tabs>
+     
+    // </div>
   );
 }
 
-{
-  //   /* <TableRow>
-  //   {users.map((ele: { name: string; email: string }, idx) => (
-  //     <div key={idx}>
-  //       <TableHead className="w-[100px]">{ele.name}</TableHead>
-  //       <TableHead className="text-right">{ele.email}</TableHead>
-  //     </div>
-  //   ))}
-  // </TableRow>; */
-}

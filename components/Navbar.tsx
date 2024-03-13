@@ -78,7 +78,7 @@ export default function Navbar() {
         }
       );
       setNotifications(res.data.notification);
-      console.log(res.data);
+   
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }
