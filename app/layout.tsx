@@ -1,14 +1,18 @@
+"use client";
+import { Provider } from "react-redux";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { store } from "@/redux/store";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Delma",
-  description: "Doctor appoinment manegment application",
-};
+// export const metadata: Metadata = {
+//   title: "Delma",
+//   description: "Doctor appointment management application",
+// };
 
 export default function RootLayout({
   children,
@@ -18,8 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar />
-        {children}
+
+        <Provider store={store}>
+          <Navbar />
+          {children}
+        </Provider>
       </body>
     </html>
   );
