@@ -18,9 +18,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const [check, setCheck] = useState(false);
+  console.log(check);
   const handleLogin = async () => {
     try {
-      const res = await axios.post("http://localhost:7003/api/v1/user/login", {
+      let URL = "http://localhost:7003/api/v1/user/login";
+      if (check) {
+        URL = "http://localhost:7003/api/v1/user/admin-login";
+      }
+      const res = await axios.post(URL, {
         email,
         password,
       });
@@ -29,6 +34,7 @@ export default function Login() {
         name: res.data.user.name,
         email: res.data.user.email,
         id: res.data.user._id,
+        isAdmin: res.data.user.isAdmin,
       };
       const token = res.data.token;
       dispatch(setUser({ user, token }));

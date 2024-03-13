@@ -31,6 +31,12 @@ const navlinks = [
     href: "/blogs",
   },
 ];
+const adminLinks = [
+  {
+    link: "Dashboard",
+    href: "/dashboard",
+  },
+];
 
 export default function Navbar() {
   const token = useSelector(selectToken);
@@ -94,6 +100,17 @@ export default function Navbar() {
               <Button variant={"link"}>{ele.link}</Button>
             </Link>
           ))}
+          {currentUser?.isAdmin ? (
+            <>
+              {adminLinks.map((ele, idx) => (
+                <Link href={ele.href} key={idx}>
+                  <Button variant={"link"}>{ele.link}</Button>
+                </Link>
+              ))}
+            </>
+          ) : (
+            <></>
+          )}
         </div>
         <div className="flex justify-center items-center ">
           <DropdownMenu>
@@ -108,7 +125,7 @@ export default function Navbar() {
             <DropdownMenuContent className="min-w-[350px] mr-14">
               {notifications &&
                 notifications.length > 0 &&
-                notifications.map((ele, idx) => (
+                notifications.map((ele: { message: string }, idx) => (
                   <DropdownMenuItem
                     className="rounded-sm flex justify-evenly "
                     key={idx}
