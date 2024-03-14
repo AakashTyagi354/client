@@ -37,13 +37,25 @@ export default function Layout({
               href={"/dashboard/createcat"}
               className="w-[80%] rounded-md mx-auto"
             >
-              <Button variant={"outline"} className="w-full">Create Categories</Button>
+              <Button variant={"outline"} className="w-full">
+                Create Categories
+              </Button>
             </Link>
             <Link
               href={"/dashboard/createproduct"}
               className="w-[80%] rounded-md mx-auto"
             >
-              <Button variant={"outline"} className="w-full">Create Product</Button>
+              <Button variant={"outline"} className="w-full">
+                Create Product
+              </Button>
+            </Link>
+            <Link
+              href={"/dashboard/products"}
+              className="w-[80%] rounded-md mx-auto"
+            >
+              <Button variant={"outline"} className="w-full">
+                Listed Products
+              </Button>
             </Link>
           </div>
         </div>

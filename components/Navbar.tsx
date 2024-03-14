@@ -27,8 +27,8 @@ const navlinks = [
     href: "/video",
   },
   {
-    link: "Blogs",
-    href: "/blogs",
+    link: "Medicines",
+    href: "/medicines",
   },
 ];
 const adminLinks = [
@@ -78,7 +78,6 @@ export default function Navbar() {
         }
       );
       setNotifications(res.data.notification);
-   
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }
@@ -87,8 +86,8 @@ export default function Navbar() {
     handleNotifications();
   }, [token]);
   return (
-    <div className="sticky top-0 z-50 bg-inherit">
-      <WidthWrapper className=" h-12 flex items-center justify-between">
+    <div className="sticky top-0 z-50 bg-inherit border-b border-gray-100 ">
+      <WidthWrapper className=" h-16 flex items-center justify-between">
         <div>
           <Link className="font-bold text-xl" href={"/"}>
             Logo

@@ -68,6 +68,35 @@ export default function Page() {
       console.log("Error creating product", err);
     }
   };
+
+  //create product function
+  const handleCreate = async () => {
+    try {
+      const productData = new FormData();
+      productData.append("name", name);
+      productData.append("description", description);
+      productData.append("price", price);
+      productData.append("quantity", quantity);
+      productData.append("photo", photo);
+      productData.append("category", position);
+      console.log(productData);
+      const { data } = await axios.post(
+        "http://localhost:7003/api/v1/product/create-product",
+        productData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (data?.success) {
+        console.log(data);
+      } else {
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div>
       <WidthWrapper>
@@ -155,7 +184,7 @@ export default function Page() {
               onChange={(e) => setQuantity(e.target.value)}
             />
           </div>
-          <Button className="w-full mt-3" onClick={handleCreateProduct}>
+          <Button className="w-full mt-3" onClick={handleCreate}>
             Create Product
           </Button>
         </div>
