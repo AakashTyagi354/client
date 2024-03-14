@@ -41,6 +41,7 @@ export default function CartPage() {
               {cart.length} items added to cart
             </p>
             {cart.map((ele, idx) => (
+              
               <div
                 key={idx}
                 className="h-[280px] flex items-center w-[85%] border-b border-dotted border-gray-300   "

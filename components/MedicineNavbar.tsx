@@ -108,22 +108,22 @@ export default function MedicineNavbar() {
             {view && (
               <div className="w-full flex flex-col gap-4 max-h-[300px] py-4  overflow-y-scroll bg-gray-50 absolute top-[37px] left-0">
                 {searchResults.map((ele, idx) => (
-                  <div
-                    key={idx}
-                    className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 "
-                  >
-                    <p className="text-sm text-gray-500 tracking-wide">
-                      {" "}
-                      {textFormater(ele.name, 30)}
-                    </p>
-                    <button
-                      onClick={() => handleCart(ele)}
-                      className="px-4 py-1 text-sm text-gray-500 border border-[#15BEF0] transition-all hover:bg-[#15BEF0] hover:text-white"
-                    >
-                      Add
-                    </button>
-                  </div>
+                  <Link href={`/medicines/${ele._id}`} key={idx}>
+                    <div className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 ">
+                      <p className="text-sm text-gray-500 tracking-wide">
+                        {" "}
+                        {textFormater(ele.name, 30)}
+                      </p>
+                      <button
+                        onClick={() => handleCart(ele)}
+                        className="px-4 py-1 text-sm text-gray-500 border border-[#15BEF0] transition-all hover:bg-[#15BEF0] hover:text-white"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </Link>
                 ))}
+
                 {searchResults.length === 0 && (
                   <p className="w-full text-center text-sm text-gray-500">
                     No results found
