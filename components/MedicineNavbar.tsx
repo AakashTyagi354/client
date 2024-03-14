@@ -1,9 +1,16 @@
+"use client";
+
 import { CiSearch } from "react-icons/ci";
 import WidthWrapper from "./WidthWrapper";
 import { Button } from "./ui/button";
-import { MdShoppingCart } from "react-icons/md";
+import { MdOutlineAddShoppingCart, MdShoppingCart } from "react-icons/md";
+import { useSelector } from "react-redux";
+import { selectCartItems } from "@/redux/cartSlice";
+import Link from "next/link";
 
 export default function MedicineNavbar() {
+  const cart = useSelector(selectCartItems);
+  console.log(cart);
   return (
     <div className=" sticky top-14 z-10 border-b border-gray-100 bg-white shadow-sm h-16">
       <WidthWrapper className="h-full">
@@ -17,10 +24,15 @@ export default function MedicineNavbar() {
             />
           </div>
           <div className="">
-            <Button className="bg-[#15BEF0] rounded-none flex gap-3">
-              <MdShoppingCart size={20} />
-              View Cart
-            </Button>
+            <Link href={"/medicines/cartpage"}>
+              <Button className="bg-[#15BEF0] transition-all rounded-none flex gap-4 relative">
+                <MdShoppingCart size={20} />
+                <div className="rounded-full h-5 w-5 bg-white absolute top-[2px] left-[25px] text-gray-700">
+                  {cart.length}
+                </div>
+                View Cart
+              </Button>
+            </Link>
           </div>
         </div>
       </WidthWrapper>
