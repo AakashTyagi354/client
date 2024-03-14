@@ -15,6 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+
+
+
+
+
 export default function Page() {
   const token = useSelector(selectToken);
 
@@ -29,7 +34,7 @@ export default function Page() {
           },
         }
       );
-      setDoctors(res.data.data);
+      setDoctors(res.data.data || []);
       console.log(res.data.data);
     } catch (err) {
       console.log("error in fetching users", err);
@@ -49,7 +54,7 @@ export default function Page() {
           },
         }
       );
-      setDoctors(res.data.data);
+      setDoctors(res.data.data || []);
       console.log(res.data.data);
     } catch (err) {
       console.log("error in changing doctor status", err);
@@ -94,7 +99,7 @@ export default function Page() {
                   <TableHead>{ele.experience}</TableHead>
                   <TableHead>{ele.feesPerCunsaltation}</TableHead>
                   <TableHead className="text-right">
-                    {ele.status === "pendling" ? (
+                    {ele.status === "pending" ? (
                       <>
                         <Button
                           variant={"destructive"}

@@ -10,6 +10,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
 import { useRouter } from "next/navigation";
+import { selectDoctor, setDoctor } from "@/redux/doctorSlice";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -38,6 +39,29 @@ export default function Login() {
       };
       const token = res.data.token;
       dispatch(setUser({ user, token }));
+      router.push("/finddoc");
+    } catch (err) {
+      console.log("ERROR IN LOGIN", err);
+    }
+  };
+
+  const handleDoctorLogin = async () => {
+    try {
+      let URL = "http://localhost:7003/api/v1/doctor/doctor-login";
+
+      const res = await axios.post(URL, {
+        email,
+        password,
+      });
+      console.log(res.data);
+      const doctor = {
+        name: res.data.doctor.firstName,
+        email: res.data.doctor.email,
+        id: res.data.doctor._id,
+      };
+      console.log(doctor);
+      const token = res.data.token;
+      dispatch(setDoctor({ doctor, token }));
       router.push("/finddoc");
     } catch (err) {
       console.log("ERROR IN LOGIN", err);
@@ -106,7 +130,9 @@ export default function Login() {
               </Link>{" "}
               here.
             </p>
-            <Button className="w-full mt-4">Login</Button>
+            <Button className="w-full mt-4" onClick={handleDoctorLogin}>
+              Login
+            </Button>
           </TabsContent>
         </Tabs>
       </WidthWrapper>

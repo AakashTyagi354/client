@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BiTrash } from "react-icons/bi";
 import axios from "axios";
+import {
+  clearDoctor,
+  selectToken as selectDocToken,
+} from "@/redux/doctorSlice";
 
 const navlinks = [
   {
@@ -24,7 +28,7 @@ const navlinks = [
   },
   {
     link: "Video Consult",
-    href: "/video",
+    href: "/videocall",
   },
   {
     link: "Medicines",
@@ -40,11 +44,14 @@ const adminLinks = [
 
 export default function Navbar() {
   const token = useSelector(selectToken);
+  const docToken = useSelector(selectDocToken);
+
   const currentUser = useSelector(selectUser);
   const [notifications, setNotifications] = useState([]);
   const dispatch = useDispatch();
   const handleLogout = () => {
     dispatch(clearUser());
+    dispatch(clearDoctor());
   };
   const handleNotificationDelete = async (idx: number) => {
     try {
@@ -145,7 +152,7 @@ export default function Navbar() {
           </DropdownMenu>
 
           <Link href={"/login"}>
-            {token ? (
+            {token || docToken ? (
               <Button variant={"ghost"} onClick={handleLogout}>
                 Logout
               </Button>
@@ -158,3 +165,5 @@ export default function Navbar() {
     </div>
   );
 }
+
+

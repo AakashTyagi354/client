@@ -10,7 +10,8 @@ interface User {
   name: string;
   email: string;
   id: string;
-  isAdmin:boolean
+  isAdmin: boolean;
+
   // Add any other user properties here
 }
 

@@ -22,6 +22,18 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import img3 from "../../public/images/img3.jpeg";
@@ -156,17 +168,6 @@ export default function Page() {
     doctorId: string,
     doctorInfo: string
   ) => {
-    const temp = {
-      date: date,
-      time: time,
-      doctorId,
-      doctorInfo,
-      userInfo: currentUser?.name,
-      userId: currentUser?.id,
-      token,
-    };
-    console.log(temp);
-
     try {
       // Convert date to ISO string format
       const isoDate = date ? date.toISOString() : null;
@@ -181,6 +182,7 @@ export default function Page() {
           date: isoDate,
           time,
           status: "pending",
+          roomId: generateUniqueString(),
         },
         {
           headers: {
@@ -368,20 +370,44 @@ export default function Page() {
                           >
                             check availability
                           </Button>
-                          <Button
-                            className="w-[80%] mt-2 text-[12px] ml-2 bg-[#185B71]"
-                            onClick={() =>
-                              handleBookAppointment(
-                                startDate,
-                                selectedTime,
-                                ele._id,
-                                ele.firstName
-                              )
-                            }
-                            variant={"default"}
-                          >
-                            Book Appointment
-                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger>
+                              <Button className="w-full  mt-2 text-[12px] ml-2 bg-[#185B71]">
+                                Book Appoitment
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Are you sure for booking appoitment?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete your account and remove
+                                  your data from our servers.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction>
+                                  <Button
+                                    onClick={() =>
+                                      handleBookAppointment(
+                                        startDate,
+                                        selectedTime,
+                                        ele._id,
+                                        ele.firstName
+                                      )
+                                    }
+                                  >
+                                    {" "}
+                                    Book{" "}
+                                  </Button>
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     ))}
@@ -557,4 +583,10 @@ function PaginationSection({
       </Pagination>
     </div>
   );
+}
+
+function generateUniqueString() {
+  const timestamp = Date.now().toString(36); // Convert current timestamp to base 36 string
+  const randomString = Math.random().toString(36).substring(2, 8); // Generate random string and take a substring
+  return `${timestamp}-${randomString}`;
 }
