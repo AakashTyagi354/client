@@ -16,6 +16,7 @@ import { BiQuestionMark, BiSolidCoupon } from "react-icons/bi";
 import { CiTrash } from "react-icons/ci";
 import { ArrowRight, FileQuestionIcon } from "lucide-react";
 import { IoHomeOutline } from "react-icons/io5";
+import axios from "axios";
 
 export default function CartPage() {
   const cart = useSelector(selectCartItems);
@@ -31,6 +32,37 @@ export default function CartPage() {
   const handleRemove = (productId: string) => {
     dispatch(removeFromCart(productId));
   };
+
+  const checkoutHandler = async (amount: number) => {
+    const {
+      data: { order },
+    } = await axios.post("http://localhost:7003/api/v1/payment/checkout", {
+      amount,
+    });
+    const options = {
+      key: "rzp_test_fb6ALoOgdu9yem",
+      amount: order.amount,
+      currency: "INR",
+      name: "Delma",
+      description: "Doctor appointment",
+      image: "https://avatars.githubusercontent.com/u/78840211?v=4",
+      order_id: order.id,
+      callback_url: "http://localhost:7003/api/v1/payment/paymentverificaion",
+      prefill: {
+        name: "Gaurav Kumar",
+        email: "gaurav.kumar@example.com",
+        contact: "9000090000",
+      },
+      notes: {
+        address: "Razorpay Corporate Office",
+      },
+      theme: {
+        color: "#121212",
+      },
+    };
+    const razor = new window.Razorpay(options);
+    razor.open();
+  };
   console.log(cart);
   return (
     <div>
@@ -41,7 +73,6 @@ export default function CartPage() {
               {cart.length} items added to cart
             </p>
             {cart.map((ele, idx) => (
-              
               <div
                 key={idx}
                 className="h-[280px] flex items-center w-[85%] border-b border-dotted border-gray-300   "
@@ -154,7 +185,12 @@ export default function CartPage() {
                   </p>
                 </div>
               </div>
-              <Button className="w-full bg-red-500 mt-6 ">Continue</Button>
+              <Button
+                className="w-full bg-red-500 mt-6 "
+                onClick={() => checkoutHandler(3000)}
+              >
+                Continue
+              </Button>
             </div>
           </div>
         </div>

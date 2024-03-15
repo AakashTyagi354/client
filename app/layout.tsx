@@ -22,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <script src="https://checkout.razorpay.com/v1/checkout.js" async />
 
         <Provider store={store}>
           <Navbar />
