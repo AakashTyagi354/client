@@ -92,7 +92,9 @@ export default function Home() {
               consultations with expert physicians, anytime and anywhere.
             </p>
             <div className="w-full">
-              <Button className="w-[50%] mt-8 ">Check out doctors</Button>
+              <Button className="w-[50%] mt-8  bg-[#387693]">
+                Check out doctors
+              </Button>
             </div>
           </div>
           <div className=" hidden md:block md:flex-1">

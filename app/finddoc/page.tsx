@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import img3 from "../../public/images/img3.jpeg";
 import DatePicker from "react-datepicker";
@@ -43,12 +43,13 @@ import TimePicker from "react-time-picker";
 import "react-time-picker/dist/TimePicker.css";
 import { useSelector } from "react-redux";
 import { selectToken, selectUser } from "@/redux/userSlice";
-import { CiLocationOn } from "react-icons/ci";
+import { CiLocationOn, CiSearch } from "react-icons/ci";
 import { IoLanguageOutline } from "react-icons/io5";
 import { PiFlaskThin } from "react-icons/pi";
 import { PiMoneyThin } from "react-icons/pi";
 import helpImg from "../../public/images/helpimg.png";
 import "react-toastify/dist/ReactToastify.css";
+import Link from "next/link";
 
 interface DoctorsProps {
   _id: string;
@@ -94,14 +95,13 @@ export default function Page() {
   const token = useSelector(selectToken);
   const currentUser = useSelector(selectUser);
 
-  const [docs, setDocs] = useState([]);
+  const [docs, setDocs] = useState<DoctorInputProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(new Date()); // State for date
   const [selectedTime, setSelectedTime] = useState("12:00");
   const onChange = (time: any) => {
     setSelectedTime(time);
   };
-  console.log(docs);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -203,6 +203,88 @@ export default function Page() {
   const lastPostIndex = currentPage * postsPerPage;
   const firstPostIndex = lastPostIndex - postsPerPage;
   const currentPosts = docs.slice(firstPostIndex, lastPostIndex);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]); // State to hold the search results
+
+  // for search and debouncing queries
+  const [view, setView] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  // Function to handle input box click
+  const handleInputClick = () => {
+    setView(true); // Show suggestions when input box is clicked
+  };
+  // const handleSearchInputChange = (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   setSearchQuery(event.target.value);
+  // };
+
+  // Function to handle input change with debouncing
+  const handleSearchInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = event.target.value;
+    setSearchQuery(inputValue.trim());
+  };
+
+  // const handleInputChange = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `http://localhost:7003/api/v1/doctor/search-doctors/${searchQuery}`
+  //     );
+  //     console.log(res.data.data);
+  //     setDocs([...res.data.data]);
+  //   } catch (err) {}
+  // };
+
+  // Function to fetch search results
+  useEffect(() => {
+    // Clear the previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set a new timeout to debounce the search term
+    searchTimeoutRef.current = setTimeout(() => {
+      console.log(searchQuery);
+      if (searchQuery.trim() !== "") {
+        try {
+          const fetchSearchResults = async () => {
+            const response = await axios.get(
+              `http://localhost:7003/api/v1/doctor/search-doctors/${searchQuery}`
+            );
+            setSearchResults(response.data.data);
+            console.log("first", response.data.data);
+          };
+          fetchSearchResults();
+        } catch (error) {
+          console.error("Error fetching search results:", error);
+        }
+      } else {
+        setSearchResults([]); // Clear search results when search term is empty
+      }
+    }, 500); // Adjust the debounce delay as needed
+
+    // Cleanup function to clear timeout when search term changes
+    return () => {
+      clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (view && !event.target.closest(".search-container")) {
+        setView(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [view]);
 
   return (
     <div>
@@ -221,13 +303,34 @@ export default function Page() {
               Dedicated to Your Wellbeing, Every Step of the Way.
             </h1>
             <div className="flex w-full items-center justify-center mt-4">
-              <Input
-                placeholder="Search by: Doctors, Specialist, Symptoms, Diseases, Treatment"
-                className="w-[40%] outline-none focus:outline-none mt-4"
-              />
-              <Button variant={"default"} className=" h-10 mt-4 w-[100px]">
-                Search
-              </Button>
+              <div className="border p-2 flex gap-2 w-[50%] relative search-container">
+                <CiSearch size={20} className="cursor-pointer text-white" />
+                <input
+                  type="text"
+                  placeholder="Search for medicines, health products and much more"
+                  className="bg-inherit outline-none focus:outline-none w-full text-sm text-white"
+                  onClick={handleInputClick} // Toggle suggestions on input click
+                  onChange={handleSearchInputChange} // Debounced input change handler
+                />
+                {view && (
+                  <div className="w-full z-40 flex flex-col  max-h-[300px] py-4  overflow-y-scroll bg-white opacity-95 absolute top-[37px] left-0">
+                    {searchResults.map((ele:DoctorInputProps, idx) => (
+                      <div key={idx} className="hover:bg-gray-100 py-3 cursor-pointer flex items-center gap-8">
+                        <p className="text-gray-600 text-sm font-semibold ml-4">
+                          Dr.{ele.firstName} {ele.lastName}
+                        </p>
+                        <p className="text-sm text-blue-500">{ele.specialization}</p>
+                      </div>
+                    ))}
+
+                    {searchResults.length === 0 && (
+                      <p className="w-full text-center text-sm text-gray-500">
+                        No results found
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
