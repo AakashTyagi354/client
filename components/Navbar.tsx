@@ -34,6 +34,10 @@ const navlinks = [
     link: "Medicines",
     href: "/medicines",
   },
+  {
+    link: "Documents",
+    href: "/documents",
+  },
 ];
 const adminLinks = [
   {
@@ -165,5 +169,3 @@ export default function Navbar() {
     </div>
   );
 }
-
-

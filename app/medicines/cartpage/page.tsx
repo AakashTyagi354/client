@@ -32,6 +32,16 @@ export default function CartPage() {
   const handleRemove = (productId: string) => {
     dispatch(removeFromCart(productId));
   };
+  const loadRazorpayScript = async () => {
+    try {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    } catch (err) {
+      console.log("Failed to load razorpay script: ", err);
+    }
+  };
 
   const checkoutHandler = async (amount: number) => {
     const {
@@ -39,6 +49,7 @@ export default function CartPage() {
     } = await axios.post("http://localhost:7003/api/v1/payment/checkout", {
       amount,
     });
+    await loadRazorpayScript();
     const options = {
       key: "rzp_test_fb6ALoOgdu9yem",
       amount: order.amount,
