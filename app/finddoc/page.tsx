@@ -1,6 +1,10 @@
 "use client";
-
+import { MdDateRange } from "react-icons/md";
+import { TimePicker } from "antd";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import WidthWrapper from "@/components/WidthWrapper";
+import { DatePicker } from "antd";
 import homeImg from "../../public/images/img2.svg";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -37,10 +41,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import img3 from "../../public/images/img3.jpeg";
-import DatePicker from "react-datepicker";
+// import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import TimePicker from "react-time-picker";
-import "react-time-picker/dist/TimePicker.css";
+// import TimePicker from "react-time-picker";
+// import "react-time-picker/dist/TimePicker.css";
 import { useSelector } from "react-redux";
 import { selectToken, selectUser } from "@/redux/userSlice";
 import { CiLocationOn, CiSearch } from "react-icons/ci";
@@ -285,7 +289,8 @@ export default function Page() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [view]);
-
+  const dateFormat = "DD-MM-YYYY";
+  const timeFormat = "HH:mm";
   return (
     <div>
       <WidthWrapper>
@@ -314,12 +319,17 @@ export default function Page() {
                 />
                 {view && (
                   <div className="w-full z-40 flex flex-col  max-h-[300px] py-4  overflow-y-scroll bg-white opacity-95 absolute top-[37px] left-0">
-                    {searchResults.map((ele:DoctorInputProps, idx) => (
-                      <div key={idx} className="hover:bg-gray-100 py-3 cursor-pointer flex items-center gap-8">
+                    {searchResults.map((ele: DoctorInputProps, idx) => (
+                      <div
+                        key={idx}
+                        className="hover:bg-gray-100 py-3 cursor-pointer flex items-center gap-8"
+                      >
                         <p className="text-gray-600 text-sm font-semibold ml-4">
                           Dr.{ele.firstName} {ele.lastName}
                         </p>
-                        <p className="text-sm text-blue-500">{ele.specialization}</p>
+                        <p className="text-sm text-blue-500">
+                          {ele.specialization}
+                        </p>
                       </div>
                     ))}
 
@@ -444,23 +454,38 @@ export default function Page() {
                           </div>
                         </div>
                         <div className="w-[35%]  ">
-                          <div className="flex flex-col items-center justify-center h-[50%]">
+                          <div className="flex flex-col items-center  justify-center h-[50%]">
+                            {/* <div className="flex items-center gap-1 w-full ">
+                              <MdDateRange size={32} />
+                              <DatePicker
+                                className="w-[70%]  focus:outline-none outline-none border text-gray-500 px-1 py-1 bg-inherit"
+                                selected={startDate}
+                                onChange={(date) => setStartDate(date)}
+                              />
+                            </div> */}
                             <DatePicker
-                              className="w-[70%] ml-6"
-                              selected={startDate}
+                              defaultValue={dayjs(getTodaysDate())}
+                              minDate={dayjs(getTodaysDate())}
+                              maxDate={dayjs("2030-10-31", dateFormat)}
                               onChange={(date) => setStartDate(date)}
+                              className="w-full"
                             />
-
-                            <TimePicker
+                            {/* <TimePicker
                               className="mt-4"
                               onChange={onChange}
                               value={selectedTime}
                               clearIcon={null} // Hide clear icon
                               disableClock={true} // Disable clock
+                            /> */}
+                            <TimePicker
+                              defaultValue={dayjs(getCurrentTime(),timeFormat)}
+                              format={timeFormat}
+                              className="w-full"
                             />
+                            
                           </div>
                           <Button
-                            className="w-[80%] mx-auto ml-2 text-[12px] "
+                            className="w-full mx-auto  text-[12px] "
                             variant={"outline"}
                             onClick={() =>
                               handleAvailabilityCheck(
@@ -475,8 +500,8 @@ export default function Page() {
                           </Button>
 
                           <AlertDialog>
-                            <AlertDialogTrigger>
-                              <Button className="w-full  mt-2 text-[12px] ml-2 bg-[#185B71]">
+                            <AlertDialogTrigger className="w-full">
+                              <Button className="w-full mx-auto   mt-2 text-[12px]  bg-[#185B71]">
                                 Book Appoitment
                               </Button>
                             </AlertDialogTrigger>
@@ -692,4 +717,21 @@ function generateUniqueString() {
   const timestamp = Date.now().toString(36); // Convert current timestamp to base 36 string
   const randomString = Math.random().toString(36).substring(2, 8); // Generate random string and take a substring
   return `${timestamp}-${randomString}`;
+}
+
+function getTodaysDate() {
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
+  const formattedDate = `${year}-${month}-${day}`;
+  return formattedDate;
+}
+
+function getCurrentTime() {
+  const currentDate = new Date();
+  const hours = String(currentDate.getHours()).padStart(2, "0");
+  const minutes = String(currentDate.getMinutes()).padStart(2, "0");
+  const formattedTime = `${hours}:${minutes}`;
+  return formattedTime;
 }
