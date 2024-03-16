@@ -56,6 +56,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 
+const specializationData = [
+  "Orthopedics",
+  "Internal Medicine",
+  "Obstetrics and Gynecology",
+  "Dermatology",
+  "Pediatrics",
+  "Radiology",
+  "General Surgery",
+  "Ophthalmology",
+];
 interface DoctorsProps {
   _id: string;
   firstName: string;
@@ -240,7 +250,7 @@ export default function Page() {
   const handleInputClick = () => {
     setView(true); // Show suggestions when input box is clicked
   };
-  
+
   const handleSearchInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -297,6 +307,44 @@ export default function Page() {
   }, [view]);
   const dateFormat = "DD-MM-YYYY";
   const timeFormat = "HH:mm";
+
+  // State variables to hold the selected filter options
+  const [selectedSpecialization, setSelectedSpecialization] = useState("");
+  const [selectedGender, setSelectedGender] = useState("");
+  const [selectedSortBy, setSelectedSortBy] = useState("");
+
+  // Function to handle filtering based on selected options
+  const handleFilter = () => {
+    setIsLoading(true);
+    // Implement your filtering logic here based on the selected options
+    let filteredDocs = docs;
+
+    // Filter by specialization
+    if (selectedSpecialization !== "") {
+      filteredDocs = filteredDocs.filter(
+        (doc) => doc.specialization === selectedSpecialization
+      );
+    }
+
+    // Filter by gender
+    if (selectedGender !== "") {
+      filteredDocs = filteredDocs.filter(
+        (doc) => doc.gender === selectedGender
+      );
+    }
+
+    // Sort by experience
+    if (selectedSortBy === "experience-low-high") {
+      filteredDocs.sort((a, b) => a.experience - b.experience);
+    } else if (selectedSortBy === "experience-high-low") {
+      filteredDocs.sort((a, b) => b.experience - a.experience);
+    }
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    setDocs(filteredDocs);
+  };
+
   return (
     <div>
       <WidthWrapper>
@@ -328,14 +376,60 @@ export default function Page() {
                     {searchResults.map((ele: DoctorInputProps, idx) => (
                       <div
                         key={idx}
-                        className="hover:bg-gray-100 py-3 cursor-pointer flex items-center gap-8"
+                        className="hover:bg-gray-100 py-3  cursor-pointer flex items-center gap-8"
                       >
                         <p className="text-gray-600 text-sm font-semibold ml-4">
                           Dr.{ele.firstName} {ele.lastName}
                         </p>
-                        <p className="text-sm text-blue-500">
-                          {ele.specialization}
-                        </p>
+
+                        <div>
+                          <DatePicker
+                            defaultValue={dayjs(getTodaysDate(), dateFormat)}
+                            minDate={dayjs(getTodaysDate(), dateFormat)}
+                            maxDate={dayjs("2030-10-31", dateFormat)}
+                            onChange={(date) => setStartDate(date)}
+                            className="w-full"
+                            format={dateFormat}
+                          />
+
+                          <TimePicker
+                            defaultValue={dayjs(getCurrentTime(), timeFormat)}
+                            format={timeFormat}
+                            className="w-full"
+                            onChange={onChange}
+                            value={dayjs(selectedTime, timeFormat)}
+                          />
+                        </div>
+                        <div>
+                          <Button
+                            className="w-full mx-auto  text-[12px] "
+                            variant={"outline"}
+                            onClick={() =>
+                              handleAvailabilityCheck(
+                                startDate,
+                                selectedTime,
+                                ele._id,
+                                ele.firstName
+                              )
+                            }
+                          >
+                            check availability
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              handleBookAppointment(
+                                startDate,
+                                selectedTime,
+                                ele._id,
+                                ele.firstName
+                              )
+                            }
+                            className="w-full"
+                          >
+                            {" "}
+                            Book{" "}
+                          </Button>
+                        </div>
                       </div>
                     ))}
 
@@ -358,41 +452,48 @@ export default function Page() {
               <Filter />
               <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
               <div className="flex flex-col md:flex-row md:w-[60%] md:ml-4 gap-2">
-                <Select>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="specializations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">female</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  className="w-[130px]  focus:outline-none outline-none text-sm text-gray-600 rounded-md"
+                  onChange={(e) => setSelectedSpecialization(e.target.value)}
+                >
+                  <option value="" disabled selected hidden>
+                    Specializations
+                  </option>
+                  {specializationData.map((item, idx) => (
+                    <option key={idx} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Gender Select */}
+                <select
+                  className="w-[100px] rounded-md  focus:outline-none outline-none  text-sm text-gray-600"
+                  onChange={(e) => setSelectedGender(e.target.value)}
+                >
+                  <option value="" disabled selected hidden>
+                    Gender
+                  </option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+
+                {/* Sort By Select */}
+                <select
+                  className="w-[160px] focus:outline-none outline-none  text-sm text-gray-600"
+                  onChange={(e) => setSelectedSortBy(e.target.value)}
+                >
+                  <option value="" disabled selected hidden>
+                    Sort by
+                  </option>
+                  <option value="experience-low-high">
+                    Experience low - high
+                  </option>
+                  <option value="experience-high-low">
+                    Experience high - low
+                  </option>
+                </select>
+                <Button onClick={handleFilter}>Apply Filter</Button>
               </div>
             </div>
             <div className="">
@@ -406,7 +507,8 @@ export default function Page() {
                     </p>
                   </div>
                   <div className="flex flex-col  items-center  ">
-                    {currentPosts.map((ele: DoctorsProps, idx) => (
+                    {currentPosts.length == 0 && <p className="text-sm my-12 text-gray-500">No Results Found</p>}
+                    {currentPosts.map((ele: DoctorInputProps, idx) => (
                       <div
                         key={idx}
                         className=" w-[380px]  h-[260] md:w-[500px] mx-auto  md:h-[260px]  shadow-sm mt-4 flex "
@@ -428,6 +530,9 @@ export default function Page() {
                           <div className="flex gap-4  border-b border-gray-200 w-[85%] mx-auto">
                             <p className="text-[#007291] text-sm  mb-4">
                               {ele.specialization}
+                            </p>
+                            <p className="text-[#007291] text-sm  mb-4">
+                              {ele.gender}
                             </p>
                           </div>
                           <div>
@@ -461,7 +566,6 @@ export default function Page() {
                         </div>
                         <div className="w-[35%]  ">
                           <div className="flex flex-col items-center  justify-center h-[50%]">
-                           
                             <DatePicker
                               defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
@@ -470,7 +574,7 @@ export default function Page() {
                               className="w-full"
                               format={dateFormat}
                             />
-                           
+
                             <TimePicker
                               defaultValue={dayjs(getCurrentTime(), timeFormat)}
                               format={timeFormat}

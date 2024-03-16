@@ -1,5 +1,5 @@
 interface DoctorInputProps {
-  _id:string;
+  _id: string;
   firstName: string;
   lastName: string;
   languages: string[];
@@ -10,4 +10,5 @@ interface DoctorInputProps {
   experience: number;
   feesPerCunsaltation: number;
   status: string;
+  gender: string;
 }
