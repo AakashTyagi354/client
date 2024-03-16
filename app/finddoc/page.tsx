@@ -240,29 +240,13 @@ export default function Page() {
   const handleInputClick = () => {
     setView(true); // Show suggestions when input box is clicked
   };
-  // const handleSearchInputChange = (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   setSearchQuery(event.target.value);
-  // };
-
-  // Function to handle input change with debouncing
+  
   const handleSearchInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const inputValue = event.target.value;
     setSearchQuery(inputValue.trim());
   };
-
-  // const handleInputChange = async () => {
-  //   try {
-  //     const res = await axios.get(
-  //       `http://localhost:7003/api/v1/doctor/search-doctors/${searchQuery}`
-  //     );
-  //     console.log(res.data.data);
-  //     setDocs([...res.data.data]);
-  //   } catch (err) {}
-  // };
 
   // Function to fetch search results
   useEffect(() => {
@@ -326,7 +310,7 @@ export default function Page() {
           />
           <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
             {/* Place your items here */}
-            <h1 className="text-white text-4xl font-bold">
+            <h1 className="text-white text-xl md:text-4xl font-bold text-center ">
               Dedicated to Your Wellbeing, Every Step of the Way.
             </h1>
             <div className="flex w-full items-center justify-center mt-4">
@@ -370,10 +354,10 @@ export default function Page() {
       <WidthWrapper className="">
         <div className="bg-gray-50 w-full flex">
           <div className="flex-grow">
-            <div className="flex justify-center items-center mt-12">
+            <div className="flex w-[300px] gap-4 overflow-hidden md:w-full  justify-center items-center mt-12">
               <Filter />
               <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
-              <div className="flex w-[60%] ml-4 gap-2">
+              <div className="flex flex-col md:flex-row md:w-[60%] md:ml-4 gap-2">
                 <Select>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="specializations" />
@@ -411,23 +395,23 @@ export default function Page() {
                 </Select>
               </div>
             </div>
-            <div>
+            <div className="">
               {isLoading ? (
                 <Loader2 className="animate-spin mx-auto " size={24} />
               ) : (
                 <>
-                  <div className="flex mt-10 ml-12 mb-6">
+                  <div className="flex mt-10 md:ml-12 mb-6">
                     <p className="font-semibold">
                       Search Results ({docs.length > 0 ? docs.length : 0}){" "}
                     </p>
                   </div>
-                  <div className=" flex flex-col items-center  ">
+                  <div className="flex flex-col  items-center  ">
                     {currentPosts.map((ele: DoctorsProps, idx) => (
                       <div
                         key={idx}
-                        className="w-[500px] h-[260px]  shadow-sm mt-4 flex "
+                        className=" w-[380px]  h-[260] md:w-[500px] mx-auto  md:h-[260px]  shadow-sm mt-4 flex "
                       >
-                        <div className="bg-[#F1F6F7] h-full w-[25%] flex justify-center items-center">
+                        <div className="bg-[#F1F6F7] h-full hidden md:w-[25%] md:flex justify-center items-center">
                           <Image
                             src={img3}
                             alt=""
@@ -477,14 +461,7 @@ export default function Page() {
                         </div>
                         <div className="w-[35%]  ">
                           <div className="flex flex-col items-center  justify-center h-[50%]">
-                            {/* <div className="flex items-center gap-1 w-full ">
-                              <MdDateRange size={32} />
-                              <DatePicker
-                                className="w-[70%]  focus:outline-none outline-none border text-gray-500 px-1 py-1 bg-inherit"
-                                selected={startDate}
-                                onChange={(date) => setStartDate(date)}
-                              />
-                            </div> */}
+                           
                             <DatePicker
                               defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
@@ -493,13 +470,7 @@ export default function Page() {
                               className="w-full"
                               format={dateFormat}
                             />
-                            {/* <TimePicker
-                              className="mt-4"
-                              onChange={onChange}
-                              value={selectedTime}
-                              clearIcon={null} // Hide clear icon
-                              disableClock={true} // Disable clock
-                            /> */}
+                           
                             <TimePicker
                               defaultValue={dayjs(getCurrentTime(), timeFormat)}
                               format={timeFormat}
@@ -577,7 +548,7 @@ export default function Page() {
               )}
             </div>
           </div>
-          <div className="w-[500px]">
+          <div className="w-[500px]  hidden lg:block">
             <div className="w-[300px]  border border-gray-300 mt-12  ">
               <div className="mt-12">
                 <Image
