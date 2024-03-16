@@ -38,7 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import img3 from "../../public/images/img3.jpeg";
 // import DatePicker from "react-datepicker";
@@ -112,6 +112,7 @@ export default function Page() {
   const { toast } = useToast();
 
   const [docs, setDocs] = useState<DoctorInputProps[]>([]);
+  // const docs = useMemo(() => docs, [docs]);
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(new Date()); // State for date
   const [selectedTime, setSelectedTime] = useState("12:00");
@@ -507,7 +508,11 @@ export default function Page() {
                     </p>
                   </div>
                   <div className="flex flex-col  items-center  ">
-                    {currentPosts.length == 0 && <p className="text-sm my-12 text-gray-500">No Results Found</p>}
+                    {currentPosts.length == 0 && (
+                      <p className="text-sm my-12 text-gray-500">
+                        No Results Found
+                      </p>
+                    )}
                     {currentPosts.map((ele: DoctorInputProps, idx) => (
                       <div
                         key={idx}

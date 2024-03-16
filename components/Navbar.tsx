@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { clearUser, selectToken, selectUser } from "@/redux/userSlice";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { HiOutlineMenu } from "react-icons/hi";
+import { RxCross2 } from "react-icons/rx";
 import {
   Sheet,
   SheetContent,
@@ -29,6 +30,7 @@ import {
   clearDoctor,
   selectToken as selectDocToken,
 } from "@/redux/doctorSlice";
+import { Trash2 } from "lucide-react";
 
 const navlinks = [
   {
@@ -94,6 +96,27 @@ export default function Navbar() {
           },
         }
       );
+      setNotifications(res.data.data);
+    } catch (err) {
+      console.log("ERROR IN NOTIFICAIONS", err);
+    }
+  };
+  const handleClearNotificatio = async () => {
+    try {
+      console.log("reached");
+      const res = await axios.post(
+        "http://localhost:7003/api/v1/user/clear-all-notifications",
+        {
+          userId: currentUser?.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(res.data);
+      setNotifications(res.data.data);
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }
@@ -162,32 +185,43 @@ export default function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <div className=" relative mr-2 cursor-pointer">
-                  <IoMdNotificationsOutline size={24} />
-                  <div className="h-5 w-5 bg-red-600 rounded-full absolute top-[-6px] right-[-7px] flex items-center justify-center text-sm p-1 text-white ">
-                    {notifications && <p>{notifications.length}</p>}
-                  </div>
+                  <IoMdNotificationsOutline size={25} />
+                  {notifications && notifications.length > 0 && (
+                    <div className="h-[20px] w-[20px] bg-red-600 rounded-full absolute top-[-6px] right-[-7px] flex items-center justify-center text-sm p-[6px] text-white ">
+                      {notifications && <p>{notifications.length}</p>}
+                    </div>
+                  )}
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="min-w-[350px] mr-14">
+              <DropdownMenuContent className="w-[480px] mr-14  max-h-[500px] overflow-y-scroll">
                 {notifications &&
                   notifications.length > 0 &&
                   notifications.map((ele: { message: string }, idx) => (
                     <DropdownMenuItem
-                      className="rounded-sm flex justify-evenly "
+                      className="rounded-sm flex justify-between border-b py-4 px-2 "
                       key={idx}
                     >
-                      <DropdownMenuItem className="">
-                        {ele.message}
-                      </DropdownMenuItem>
-                      <BiTrash
+                      <p className="text-sm text-gray-500">{ele.message}</p>
+
+                      <RxCross2
                         size={22}
-                        className="cursor-pointer  "
-                        color="red"
+                        className="cursor-pointer  text-red-500  ml-6 "
                         onClick={() => handleNotificationDelete(idx)}
                       />
                       <DropdownMenuSeparator />
                     </DropdownMenuItem>
                   ))}
+                {notifications && notifications.length > 0 && (
+                  <div className="flex items-center justify-between px-3 py-3">
+                    <p className="text-sm underline font-[400]">
+                      Clear all notifications
+                    </p>
+                    <Trash2
+                      onClick={handleClearNotificatio}
+                      className="text-red-500 cursor-pointer hover:text-red-600"
+                    />
+                  </div>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
