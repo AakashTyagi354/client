@@ -47,7 +47,7 @@ const navlinks = [
   },
   {
     link: "Documents",
-    href: "/documents",
+    href: "/documents/files",
   },
 ];
 const doctorLinks = [
@@ -67,7 +67,7 @@ const doctorLinks = [
 const adminLinks = [
   {
     link: "Dashboard",
-    href: "/dashboard",
+    href: "/dashboard/users",
   },
 ];
 

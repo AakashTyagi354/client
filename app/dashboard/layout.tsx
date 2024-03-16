@@ -9,7 +9,7 @@ export default function Layout({
   return (
     <>
       <main className="flex">
-        <div className="min-w-[260px] h-screen bg-gray-50">
+        <div className=" hidden md:block md:min-w-[260px] h-screen bg-gray-50">
           <div className="flex flex-col mt-12 gap-4">
             <p className="text-gray-600 underline text-lg tracking-wider text-center">
               Appointments Controls

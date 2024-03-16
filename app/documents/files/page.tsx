@@ -57,53 +57,62 @@ export default function Files() {
   useEffect(() => {
     getAllDocuments();
   }, [handleDeleteDocument]);
-  return (
-    <div className="w-full">
-      <p className="text-2xl text-center font-bold mt-6 text-gray-600">
-        All Document
-      </p>
-      <div className="flex flex-wrap gap-4 mt-12 w-[80%] mx-auto ">
-        {documents.map((item, idx) => (
-          <div
-            key={idx}
-            className="border border-gray-50 h-[200px] rounded-md w-[230px] cursor-pointer transition-all hover:bg-gray-50 "
-          >
-            <div className="flex items-center justify-center">
-              {item.type === "image/webp" ? (
-                <>
-                  <CiImageOn size={90} />
-                </>
-              ) : (
-                <CiFileOn size={90} />
-              )}
-            </div>
-            <div className="mt-4  w-[80%] mx-auto">
-              <p className="text-gray-500 text-sm">
-                {textFormater(item.name, 12)}
-              </p>
-              <p className="text-gray-500 text-sm mt-1">
-                Uploaded on {getDate(item.createdAt)}
-              </p>
-              <div className="mt-2 flex justify-between items-center">
-                <a
-                  href={item.url}
-                  target="_blank"
-                  className="text-sm to-gray-400 underline flex gap-1 items-center"
-                >
-                  view document
-                  <LuMoveUpRight />
-                </a>
-                <FaRegTrashAlt
-                  className="text-red-600 cursor-pointer"
-                  onClick={() => handleDeleteDocument(item._id)}
-                />
+
+  if (user?.isAdmin) {
+    return (
+      <>
+        <p className="text-center mt-40 text-sm text-gray-500">Admin cannot access the documents of users</p>
+      </>
+    );
+  } else {
+    return (
+      <div className="w-full">
+        <p className="text-2xl text-center font-bold mt-6 text-gray-600">
+          All Document
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2  lg:grid-cols-4 gap-4 mt-12 w-[80%] mx-auto  ">
+          {documents.map((item, idx) => (
+            <div
+              key={idx}
+              className="border border-gray-50 h-[200px] rounded-md w-[230px] cursor-pointer transition-all hover:bg-gray-50 "
+            >
+              <div className="flex items-center justify-center">
+                {item.type === "image/webp" ? (
+                  <>
+                    <CiImageOn size={90} />
+                  </>
+                ) : (
+                  <CiFileOn size={90} />
+                )}
+              </div>
+              <div className="mt-4  w-[80%] mx-auto">
+                <p className="text-gray-500 text-sm">
+                  {textFormater(item.name, 12)}
+                </p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Uploaded on {getDate(item.createdAt)}
+                </p>
+                <div className="mt-2 flex justify-between items-center">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    className="text-sm to-gray-400 underline flex gap-1 items-center"
+                  >
+                    view document
+                    <LuMoveUpRight />
+                  </a>
+                  <FaRegTrashAlt
+                    className="text-red-600 cursor-pointer"
+                    onClick={() => handleDeleteDocument(item._id)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 const getDate = (createdAt: string) => {

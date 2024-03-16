@@ -14,6 +14,7 @@ import { app } from "@/firebaseConfig";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { selectToken, selectUser } from "@/redux/userSlice";
+import { toast } from "./ui/use-toast";
 
 export default function UploadForm() {
   const token = useSelector(selectToken);
@@ -45,6 +46,11 @@ export default function UploadForm() {
             console.log("File available at", downloadURL);
             console.log(downloadURL);
             handleUploadDocuments(downloadURL); // Call handleUploadDocuments after setting the url
+            toast({
+              variant: "default",
+              description: "Document Uploaded successfully",
+            });
+            setFile(null);
           })
           .catch((error) => {
             console.error("Error getting download URL:", error);
@@ -123,7 +129,9 @@ export default function UploadForm() {
       >
         Upload
       </button>
-      {progress > 0 && progress < 100 && <Progress value={progress} />}
+      {progress > 0 && progress < 100 && (
+        <Progress value={30} className="h-2 w-[80%] mx-auto  mt-12" />
+      )}
     </div>
   );
 }

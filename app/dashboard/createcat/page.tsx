@@ -15,11 +15,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
+
 export default function Page() {
   const token = useSelector(selectToken);
 
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
+  const [updateStr, setUpdateStr] = useState("");
   const handleCreateCat = async () => {
     try {
       const res = await axios.post(
@@ -33,6 +44,7 @@ export default function Page() {
           },
         }
       );
+      setCategories(res.data.allCategories);
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -44,6 +56,37 @@ export default function Page() {
       );
 
       setCategories(res.data.category);
+    } catch (err) {
+      console.log("Error creating category", err);
+    }
+  };
+  useEffect(() => {
+    getCategories();
+  }, []);
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:7003/api/v1/category/delete-category/${id}`
+      );
+
+      setCategories(res.data.allCategories);
+    } catch (err) {
+      console.log("Error creating category", err);
+    }
+  };
+  const handleUpdateCategory = async (id: string) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:7003/api/v1/category/update-category/${id}`,
+        {
+          name: updateStr,
+        }
+      );
+
+      setCategories(res.data.allCategories);
+      toast({
+        description: res.data.message,
+      });
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -80,12 +123,40 @@ export default function Page() {
               </TableRow>
             </TableHeader>
             <TableBody className="mt-6">
-              {categories.map((ele: { name: string }, idx) => (
+              {categories.map((ele: { name: string; _id: string }, idx) => (
                 <TableRow key={idx}>
                   <TableHead className="w-[100px]">{ele.name}</TableHead>
                   <TableHead className="text-right ">
-                    <Button variant={"destructive"} className="mr-2">Delete</Button>
-                    <Button>Update</Button>
+                    <Button
+                      onClick={() => handleDeleteCategory(ele._id)}
+                      variant={"destructive"}
+                      className="mr-2"
+                    >
+                      Delete
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger>
+                        <Button>Update</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you absolutely sure?</DialogTitle>
+                          <DialogDescription className="flex items-center gap-3 ">
+                            <Input
+                              placeholder="enter new updated name"
+                              className="mt-4"
+                              onChange={(e) => setUpdateStr(e.target.value)}
+                            />
+                            <Button
+                              className="mt-4"
+                              onClick={() => handleUpdateCategory(ele._id)}
+                            >
+                              Update
+                            </Button>
+                          </DialogDescription>
+                        </DialogHeader>
+                      </DialogContent>
+                    </Dialog>
                   </TableHead>
                 </TableRow>
               ))}
