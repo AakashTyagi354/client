@@ -54,6 +54,7 @@ import { PiMoneyThin } from "react-icons/pi";
 import helpImg from "../../public/images/helpimg.png";
 import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DoctorsProps {
   _id: string;
@@ -98,6 +99,7 @@ export default function Page() {
 
   const token = useSelector(selectToken);
   const currentUser = useSelector(selectUser);
+  const { toast } = useToast();
 
   const [docs, setDocs] = useState<DoctorInputProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,8 +135,9 @@ export default function Page() {
   ) => {
     try {
       // Convert date to ISO string format
-      const isoDate = date ? date.toISOString() : null;
-
+      const isDate = date ? date.toISOString() : null;
+      console.log("date", isDate);
+      console.log("time", time);
       const res = await axios.post(
         "http://localhost:7003/api/v1/user/booking-availbility",
         {
@@ -142,7 +145,7 @@ export default function Page() {
           doctorId: doctorId,
           doctorInfo,
           userInfo: currentUser?.name,
-          date: isoDate,
+          date: isDate,
           time,
         },
         {
@@ -153,12 +156,18 @@ export default function Page() {
       );
       const str = res.data.message;
       console.log(str);
-      // toast({
-      //   title: "Uh oh! Something went wrong.",
-      //   description: str,
-      //   action: <ToastAction altText="Try again">Book Now</ToastAction>,
-      // });
-      alert(str);
+      if (res.data.success === false) {
+        toast({
+          variant: "destructive",
+          title: "Status of your availability check",
+          description: str,
+        });
+      } else {
+        toast({
+          title: "Status of your availability check",
+          description: str,
+        });
+      }
 
       console.log("RESPONSE OF CHECK FUNCTION", res);
     } catch (err) {
@@ -174,7 +183,7 @@ export default function Page() {
   ) => {
     try {
       // Convert date to ISO string format
-      const isoDate = date ? date.toISOString() : null;
+      const isDate = date ? date.toISOString() : null;
 
       const res = await axios.post(
         "http://localhost:7003/api/v1/user/book-appointment",
@@ -183,7 +192,7 @@ export default function Page() {
           doctorId: doctorId,
           doctorInfo,
           userInfo: currentUser?.name,
-          date: isoDate,
+          date: isDate,
           time,
           status: "pending",
           roomId: generateUniqueString(),
@@ -194,7 +203,20 @@ export default function Page() {
           },
         }
       );
-      alert(res.data.message);
+      const str = res.data.message;
+
+      if (res.data.success === false) {
+        toast({
+          variant: "destructive",
+          title: str,
+        });
+      } else {
+        toast({
+          title: str,
+        });
+      }
+
+      // alert(res.data.message);
       console.log("RESPONSE OF booking appoitment FUNCTION", res);
     } catch (err) {
       console.log("ERROR IN booking appointment CHECK", err);
@@ -464,11 +486,12 @@ export default function Page() {
                               />
                             </div> */}
                             <DatePicker
-                              defaultValue={dayjs(getTodaysDate())}
-                              minDate={dayjs(getTodaysDate())}
+                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
+                              minDate={dayjs(getTodaysDate(), dateFormat)}
                               maxDate={dayjs("2030-10-31", dateFormat)}
                               onChange={(date) => setStartDate(date)}
                               className="w-full"
+                              format={dateFormat}
                             />
                             {/* <TimePicker
                               className="mt-4"
@@ -478,11 +501,12 @@ export default function Page() {
                               disableClock={true} // Disable clock
                             /> */}
                             <TimePicker
-                              defaultValue={dayjs(getCurrentTime(),timeFormat)}
+                              defaultValue={dayjs(getCurrentTime(), timeFormat)}
                               format={timeFormat}
                               className="w-full"
+                              onChange={onChange}
+                              value={dayjs(selectedTime, timeFormat)}
                             />
-                            
                           </div>
                           <Button
                             className="w-full mx-auto  text-[12px] "
@@ -501,14 +525,14 @@ export default function Page() {
 
                           <AlertDialog>
                             <AlertDialogTrigger className="w-full">
-                              <Button className="w-full mx-auto   mt-2 text-[12px]  bg-[#185B71]">
+                              <Button className="w-full mx-auto    text-[12px]  bg-[#185B71]">
                                 Book Appoitment
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
-                                  Are you sure for booking appoitment?
+                                  Are you sure you want to book the appoitment?
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   This action cannot be undone. This will
@@ -528,6 +552,7 @@ export default function Page() {
                                         ele.firstName
                                       )
                                     }
+                                    className="w-full"
                                   >
                                     {" "}
                                     Book{" "}
