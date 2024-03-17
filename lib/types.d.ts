@@ -14,15 +14,32 @@ interface DoctorInputProps {
 }
 
 interface DocumentInputProps {
-  _id:string
+  _id: string;
   userId: string;
   url: string;
   type: string;
   name: string;
   size: number;
-  createdAt:Dtae
+  createdAt: Dtae;
 }
 interface FormData {
   email: string;
   password: string;
+}
+
+interface MRPInputProps {
+  price: number;
+  quantity: number;
+}
+
+interface ProductInputProps {
+  _id: string;
+  description;
+  price: number;
+  slug: string;
+  category: any;
+  quantity: number;
+  photo: object;
+  shipping: boolean;
+  name:string
 }

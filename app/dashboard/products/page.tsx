@@ -11,7 +11,7 @@ import { MdOutlineAddShoppingCart } from "react-icons/md";
 import { useDispatch } from "react-redux";
 
 export default function Page() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<ProductInputProps[]>([]);
   const dispatch = useDispatch();
 
   const getProducts = async () => {
@@ -43,15 +43,7 @@ export default function Page() {
   //     );
   //   };
   // ;
-  const handleCart = (product: {
-    _id: string;
-    name: string;
-    description: string;
-    price: number;
-    quantity: number;
-    category: string;
-    photo: object;
-  }) => {
+  const handleCart = (product: ProductInputProps) => {
     dispatch(
       addToCart({
         productId: product._id,
@@ -72,52 +64,41 @@ export default function Page() {
           List of all products{" "}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-12">
-          {products.map(
-            (
-              ele: {
-                _id: string;
-                name: string;
-                description: string;
-                price: number;
-              },
-              idx
-            ) => (
-              <Link href={`/medicines/${ele._id}`} key={idx}>
-                <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
-                  <Image
-                    src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele._id}`}
-                    alt=""
-                    height={100}
-                    width={100}
-                    className="h-[200px] w-[75%] mx-auto object-contain"
-                  />
-                  <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
-                    {textFormater(ele.name, 40)}
+          {products.map((ele: ProductInputProps, idx) => (
+            <Link href={`/medicines/${ele._id}`} key={idx}>
+              <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
+                <Image
+                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele._id}`}
+                  alt=""
+                  height={100}
+                  width={100}
+                  className="h-[200px] w-[75%] mx-auto object-contain"
+                />
+                <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
+                  {textFormater(ele.name, 40)}
+                </p>
+                <p className="text-[11px] m-4 text-gray-400">
+                  {textFormater(ele.description, 60)}
+                </p>
+                <div className="flex items-center gap-2 ml-4">
+                  <p className="text-[12px] text-gray-500 ">
+                    MRP <span className="line-through">₹{ele.price + 123}</span>
                   </p>
-                  <p className="text-[11px] m-4 text-gray-400">
-                    {textFormater(ele.description, 60)}
+                  <p className="text-[14px] text-green-600">
+                    {Math.floor(Math.random() * (50 - 10 + 1)) + 10}% off
                   </p>
-                  <div className="flex items-center gap-2 ml-4">
-                    <p className="text-[12px] text-gray-500 ">
-                      MRP{" "}
-                      <span className="line-through">₹{ele.price + 123}</span>
-                    </p>
-                    <p className="text-[14px] text-green-600">
-                      {Math.floor(Math.random() * (50 - 10 + 1)) + 10}% off
-                    </p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="ml-4 mt-1 text-gray-600 font-semibold">
-                      ₹{ele.price}
-                    </p>
-                    <Button variant={"ghost"} onClick={() => handleCart(ele)}>
-                      <MdOutlineAddShoppingCart size={24} />
-                    </Button>
-                  </div>
                 </div>
-              </Link>
-            )
-          )}
+                <div className="flex justify-between items-center">
+                  <p className="ml-4 mt-1 text-gray-600 font-semibold">
+                    ₹{ele.price}
+                  </p>
+                  <Button variant={"ghost"} onClick={() => handleCart(ele)}>
+                    <MdOutlineAddShoppingCart size={24} />
+                  </Button>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </WidthWrapper>
     </div>

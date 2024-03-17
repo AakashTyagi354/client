@@ -17,6 +17,11 @@ import { CiTrash } from "react-icons/ci";
 import { ArrowRight, FileQuestionIcon } from "lucide-react";
 import { IoHomeOutline } from "react-icons/io5";
 import axios from "axios";
+declare global {
+  interface Window {
+    Razorpay: any; // or specify the type of Razorpay object if known
+  }
+}
 
 export default function CartPage() {
   const cart = useSelector(selectCartItems);
@@ -46,9 +51,12 @@ export default function CartPage() {
   const checkoutHandler = async (amount: number) => {
     const {
       data: { order },
-    } = await axios.post("https://doc-app-7im8.onrender.com/api/v1/payment/checkout", {
-      amount,
-    });
+    } = await axios.post(
+      "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",
+      {
+        amount,
+      }
+    );
     await loadRazorpayScript();
     const options = {
       key: "rzp_test_fb6ALoOgdu9yem",
@@ -58,7 +66,8 @@ export default function CartPage() {
       description: "Doctor appointment",
       image: "https://avatars.githubusercontent.com/u/78840211?v=4",
       order_id: order.id,
-      callback_url: "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
+      callback_url:
+        "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
       prefill: {
         name: "Gaurav Kumar",
         email: "gaurav.kumar@example.com",
@@ -211,7 +220,7 @@ export default function CartPage() {
 }
 
 const totalMRP = (items: any) => {
-  return items.reduce((acc: number, ele: number) => {
+  return items.reduce((acc: number, ele: MRPInputProps) => {
     return acc + ele.price * ele.quantity;
   }, 0);
 };
