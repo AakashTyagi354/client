@@ -15,15 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-
-
-
-
+import { toast } from "@/components/ui/use-toast";
 
 export default function Page() {
   const token = useSelector(selectToken);
 
-  const [doctors, setDoctors] = useState([]);
+  const [doctors, setDoctors] = useState<DoctorInputProps[]>([]);
   const handleDoctors = async () => {
     try {
       const res = await axios.get(
@@ -34,8 +31,11 @@ export default function Page() {
           },
         }
       );
-      setDoctors(res.data.data || []);
-      console.log(res.data.data);
+      if (Array.isArray(res.data.data)) {
+        setDoctors(res.data.data);
+      } else {
+        console.error("Data received from API is not an array:", res.data.data);
+      }
     } catch (err) {
       console.log("error in fetching users", err);
     }
@@ -54,8 +54,18 @@ export default function Page() {
           },
         }
       );
-      setDoctors(res.data.data || []);
-      console.log(res.data.data);
+      if (Array.isArray(res.data.data)) {
+        setDoctors(res.data.data);
+        toast({
+          description: res.data.message,
+        });
+      } else {
+        console.error("Data received from API is not an array:", res.data.data);
+        toast({
+          variant: "destructive",
+          description: res.data.message,
+        });
+      }
     } catch (err) {
       console.log("error in changing doctor status", err);
     }

@@ -346,6 +346,12 @@ export default function Page() {
     setDocs(filteredDocs);
   };
 
+  const [hydration, setHydration] = useState(false);
+  useEffect(() => {
+    setHydration(true);
+  }, []);
+  if (!hydration) return;
+
   return (
     <div>
       <WidthWrapper>
@@ -780,6 +786,7 @@ function PaginationSection({
         <PaginationEllipsis
           key="ellipsis-start"
           onClick={() => setCurrentPage(activePages[0] - 1)}
+          className="cursor-pointer"
         />
       );
     }
@@ -792,6 +799,7 @@ function PaginationSection({
           onClick={() =>
             setCurrentPage(activePages[activePages.length - 1] + 1)
           }
+          className="cursor-pointer"
         />
       );
     }
@@ -800,7 +808,7 @@ function PaginationSection({
   };
 
   return (
-    <div>
+    <div className="cursor-pointer">
       <Pagination>
         <PaginationContent>
           <PaginationItem>

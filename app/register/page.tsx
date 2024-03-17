@@ -2,15 +2,17 @@
 import WidthWrapper from "@/components/WidthWrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
 import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const route = useRouter();
   const handleRegister = async () => {
     try {
       const res = await axios.post(
@@ -24,6 +26,17 @@ export default function Register() {
       setEmail("");
       setPassword("");
       setUsername("");
+      if (res.data.success === true) {
+        toast({
+          description: res.data.message,
+        });
+        route.push("/login")
+      } else {
+        toast({
+          variant: "destructive",
+          description: res.data.message,
+        });
+      }
       console.log(res.data);
     } catch (err) {
       console.log("ERROR IN REGISTER", err);
@@ -51,6 +64,7 @@ export default function Register() {
             />
             <p>Password</p>
             <Input
+            type="password"
               placeholder="*********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
