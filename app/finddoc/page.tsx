@@ -112,6 +112,7 @@ export default function Page() {
   const { toast } = useToast();
 
   const [docs, setDocs] = useState<DoctorInputProps[]>([]);
+  const memoizedDocs = useMemo(() => docs, [docs]);
   // const docs = useMemo(() => docs, [docs]);
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(new Date()); // State for date
@@ -239,7 +240,7 @@ export default function Page() {
   const [postsPerPage, setPostsPerPage] = useState(6);
   const lastPostIndex = currentPage * postsPerPage;
   const firstPostIndex = lastPostIndex - postsPerPage;
-  const currentPosts = docs.slice(firstPostIndex, lastPostIndex);
+  const currentPosts = memoizedDocs.slice(firstPostIndex, lastPostIndex);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]); // State to hold the search results
 
@@ -318,9 +319,13 @@ export default function Page() {
   const handleFilter = () => {
     setIsLoading(true);
     // Implement your filtering logic here based on the selected options
-    let filteredDocs = docs;
+    let filteredDocs = memoizedDocs.slice();
+    console.log("first", filteredDocs);
 
     // Filter by specialization
+    console.log("spe", selectedSpecialization);
+    console.log("gender", selectedGender);
+    console.log("sorby", selectedSortBy);
     if (selectedSpecialization !== "") {
       filteredDocs = filteredDocs.filter(
         (doc) => doc.specialization === selectedSpecialization
@@ -342,7 +347,8 @@ export default function Page() {
     }
     setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1000);
+    console.log("result", filteredDocs);
     setDocs(filteredDocs);
   };
 
@@ -481,8 +487,8 @@ export default function Page() {
                   <option value="" disabled selected hidden>
                     Gender
                   </option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
                 </select>
 
                 {/* Sort By Select */}
@@ -510,7 +516,8 @@ export default function Page() {
                 <>
                   <div className="flex mt-10 md:ml-12 mb-6">
                     <p className="font-semibold">
-                      Search Results ({docs.length > 0 ? docs.length : 0}){" "}
+                      Search Results (
+                      {memoizedDocs.length > 0 ? memoizedDocs.length : 0}){" "}
                     </p>
                   </div>
                   <div className="flex flex-col  items-center  ">
@@ -653,7 +660,7 @@ export default function Page() {
                   </div>
                   <div className="mt-12 mb-12">
                     <PaginationSection
-                      totalPosts={docs.length}
+                      totalPosts={memoizedDocs.length}
                       postsPerPage={postsPerPage}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
