@@ -1,6 +1,5 @@
 "use client";
 
-import { textFormater } from "@/app/medicines/page";
 import WidthWrapper from "@/components/WidthWrapper";
 import { Button } from "@/components/ui/button";
 import { addToCart } from "@/redux/cartSlice";
@@ -101,4 +100,9 @@ export default function Page() {
       </WidthWrapper>
     </div>
   );
+}
+
+function textFormater(str: string, len: number) {
+  if (str.length < len) return str;
+  return str.substring(0, len) + "...";
 }

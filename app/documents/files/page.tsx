@@ -1,6 +1,6 @@
 "use client";
 
-import { textFormater } from "@/app/medicines/page";
+
 import { selectToken, selectUser } from "@/redux/userSlice";
 import axios from "axios";
 import Image from "next/image";
@@ -123,3 +123,8 @@ const getDate = (createdAt: string) => {
   const time = dateObject.toLocaleTimeString();
   return date;
 };
+
+function textFormater(str: string, len: number) {
+  if (str.length < len) return str;
+  return str.substring(0, len) + "...";
+}

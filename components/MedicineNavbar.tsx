@@ -9,7 +9,7 @@ import { addToCart, selectCartItems } from "@/redux/cartSlice";
 import Link from "next/link";
 import { MouseEventHandler, useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { textFormater } from "@/app/medicines/page";
+
 
 export default function MedicineNavbar() {
   const dispatch = useDispatch();
@@ -148,4 +148,9 @@ export default function MedicineNavbar() {
       </WidthWrapper>
     </div>
   );
+}
+
+function textFormater(str: string, len: number) {
+  if (str.length < len) return str;
+  return str.substring(0, len) + "...";
 }

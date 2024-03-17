@@ -10,7 +10,7 @@ import {
 import { useParams } from "next/navigation";
 import { LuMoveUpRight } from "react-icons/lu";
 import { FaRegTrashAlt } from "react-icons/fa";
-import { textFormater } from "@/app/medicines/page";
+
 import { CiFileOn, CiImageOn } from "react-icons/ci";
 
 export default function UserDoc() {
@@ -88,11 +88,16 @@ export default function UserDoc() {
   );
 }
 
-const getDate = (createdAt: string) => {
+function getDate(createdAt: string) {
   const dateObject = new Date(createdAt);
 
   // Get date
   const date = dateObject.toLocaleDateString();
   const time = dateObject.toLocaleTimeString();
   return date;
-};
+}
+
+function textFormater(str: string, len: number) {
+  if (str.length < len) return str;
+  return str.substring(0, len) + "...";
+}

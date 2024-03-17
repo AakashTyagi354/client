@@ -9,7 +9,7 @@ import {
 } from "@/redux/cartSlice";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { textFormater } from "../page";
+
 import { Button } from "@/components/ui/button";
 import { MdHouse, MdOutlineAddShoppingCart } from "react-icons/md";
 import { BiQuestionMark, BiSolidCoupon } from "react-icons/bi";
@@ -215,3 +215,8 @@ const totalMRP = (items: any) => {
     return acc + ele.price * ele.quantity;
   }, 0);
 };
+
+function textFormater(str: string, len: number) {
+  if (str.length < len) return str;
+  return str.substring(0, len) + "...";
+}

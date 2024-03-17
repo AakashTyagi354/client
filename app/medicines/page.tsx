@@ -192,8 +192,7 @@ export default function Medicines() {
     </div>
   );
 }
-
-export const textFormater = (str: string, len: number) => {
+function textFormater(str: string, len: number) {
   if (str.length < len) return str;
   return str.substring(0, len) + "...";
-};
+}
