@@ -6,6 +6,8 @@ import { selectToken } from "@/redux/userSlice";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { HiPencilAlt } from "react-icons/hi";
+import { IoTrashOutline } from "react-icons/io5";
 import {
   Table,
   TableBody,
@@ -45,6 +47,7 @@ export default function Page() {
         }
       );
       setCategories(res.data.allCategories);
+      setCategory("");
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -113,30 +116,32 @@ export default function Page() {
           </Button>
         </div>
         <div>
-          <Table>
+          <Table className="mt-6">
             <TableCaption>A list of all the users on delma.</TableCaption>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Category Name</TableHead>
+              <TableRow >
+                <TableHead className="w-[100px] text-lg font-bold">Category Name</TableHead>
 
-                <TableHead className="text-right">Controls</TableHead>
+                <TableHead className="text-right font-bold text-lg" >Controls</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="mt-6">
+            <TableBody className="mt-12">
               {categories.map((ele: { name: string; _id: string }, idx) => (
                 <TableRow key={idx}>
                   <TableHead className="w-[100px]">{ele.name}</TableHead>
                   <TableHead className="text-right ">
                     <Button
                       onClick={() => handleDeleteCategory(ele._id)}
-                      variant={"destructive"}
+                      variant={"ghost"}
                       className="mr-2"
                     >
-                      Delete
+                      <IoTrashOutline size={25} color="red"/>
                     </Button>
                     <Dialog>
                       <DialogTrigger>
-                        <Button>Update</Button>
+                        <Button variant={"ghost"}>
+                          <HiPencilAlt size={25}/>
+                        </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
