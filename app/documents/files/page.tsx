@@ -1,6 +1,5 @@
 "use client";
 
-
 import { selectToken, selectUser } from "@/redux/userSlice";
 import axios from "axios";
 import Image from "next/image";
@@ -61,7 +60,9 @@ export default function Files() {
   if (user?.isAdmin) {
     return (
       <>
-        <p className="text-center mt-40 text-sm text-gray-500">Admin cannot access the documents of users</p>
+        <p className="text-center mt-40 text-sm text-gray-500">
+          Admin cannot access the documents of users
+        </p>
       </>
     );
   } else {
@@ -71,7 +72,7 @@ export default function Files() {
           All Document
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2  lg:grid-cols-4 gap-4 mt-12 w-[80%] mx-auto  ">
-          {documents.map((item, idx) => (
+          {documents.map((item: DocumentInputProps, idx) => (
             <div
               key={idx}
               className="border border-gray-50 h-[200px] rounded-md w-[230px] cursor-pointer transition-all hover:bg-gray-50 "

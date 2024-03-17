@@ -29,16 +29,38 @@ export default function Page() {
     getProducts();
   }, []);
 
-  const handleCart: MouseEventHandler<HTMLButtonElement> = (item: any) => {
+  //   const handleCart: MouseEventHandler<HTMLButtonElement> = (item: any) => {
+  //     dispatch(
+  //       addToCart({
+  //         productId: item._id,
+  //         quantity: item.quantity,
+  //         description: item.description,
+  //         price: item.price,
+  //         name: item.name,
+  //         category: item.category,
+  //         photo: item.photo,
+  //       })
+  //     );
+  //   };
+  // ;
+  const handleCart = (product: {
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    quantity: number;
+    category: string;
+    photo: object;
+  }) => {
     dispatch(
       addToCart({
-        productId: item._id,
-        quantity: item.quantity,
-        description: item.description,
-        price: item.price,
-        name: item.name,
-        category: item.category,
-        photo: item.photo,
+        productId: product._id,
+        quantity: product.quantity,
+        description: product.description,
+        price: product.price,
+        name: product.name,
+        category: product.category,
+        photo: product.photo,
       })
     );
   };

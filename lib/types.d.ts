@@ -12,3 +12,17 @@ interface DoctorInputProps {
   status: string;
   gender: string;
 }
+
+interface DocumentInputProps {
+  _id:string
+  userId: string;
+  url: string;
+  type: string;
+  name: string;
+  size: number;
+  createdAt:Dtae
+}
+interface FormData {
+  email: string;
+  password: string;
+}

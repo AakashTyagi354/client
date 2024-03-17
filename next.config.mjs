@@ -11,10 +11,11 @@ const nextConfig = {
       {
         hostname: "randomuser.me",
       },
+      {
+        hostname: "doc-app-7im8.onrender.com",
+      },
     ],
   },
- 
-
 };
 
 export default nextConfig;

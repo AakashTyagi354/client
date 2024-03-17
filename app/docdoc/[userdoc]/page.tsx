@@ -49,7 +49,7 @@ export default function UserDoc() {
         All Document
       </p>
       <div className="flex flex-wrap gap-4 mt-12 w-[80%] mx-auto ">
-        {documents.map((item, idx) => (
+        {documents.map((item: DocumentInputProps, idx) => (
           <div
             key={idx}
             className="border border-gray-50 h-[200px] rounded-md w-[230px] cursor-pointer transition-all hover:bg-gray-50 "

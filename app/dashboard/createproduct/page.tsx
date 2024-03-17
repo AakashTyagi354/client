@@ -27,7 +27,7 @@ export default function Page() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [photo, setPhoto] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
 
   const [position, setPosition] = useState("");
   const token = useSelector(selectToken);
@@ -79,7 +79,9 @@ export default function Page() {
       productData.append("description", description);
       productData.append("price", price);
       productData.append("quantity", quantity);
-      productData.append("photo", photo);
+      if (photo !== null) {
+        productData.append("photo", photo);
+      }
       productData.append("category", position);
       console.log(productData);
       const { data } = await axios.post(
@@ -107,7 +109,7 @@ export default function Page() {
       setPrice("");
       setPosition("");
       setQuantity("");
-      setPhoto("");
+      setPhoto(null); // Set photo to null after handling create operation
     } catch (error) {
       console.log(error);
     }
@@ -141,14 +143,23 @@ export default function Page() {
             </DropdownMenu>
           </div>
           <p className="  text-gray-600 text-sm mt-4">
-            {photo ? photo.name : "Upload Photo"}
+            {/* {photo ? photo.name : "Upload Photo"} */}
+            Upload Photo
           </p>
           <div className="mb-3">
             <Input
               type="file"
               name="photo"
               accept="image/*"
-              onChange={(e) => setPhoto(e.target.files[0])}
+              // onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const selectedFile = e.target.files?.[0];
+                if (selectedFile) {
+                  setPhoto(selectedFile);
+                } else {
+                  setPhoto(null); // Handle the case when no file is selected
+                }
+              }}
               hidden
             />
           </div>
