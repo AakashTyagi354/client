@@ -19,6 +19,7 @@ import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { useSelector } from "react-redux";
 import { selectToken } from "@/redux/userSlice";
+import { toast } from "@/components/ui/use-toast";
 
 export default function Page() {
   const [categories, setCategories] = useState([]);
@@ -63,6 +64,7 @@ export default function Page() {
           },
         }
       );
+
       console.log(res.data);
     } catch (err) {
       console.log("Error creating product", err);
@@ -89,10 +91,23 @@ export default function Page() {
           },
         }
       );
-      if (data?.success) {
-        console.log(data);
+
+      if (data.success === true) {
+        toast({
+          description: data.message,
+        });
       } else {
+        toast({
+          variant: "destructive",
+          description: data.message,
+        });
       }
+      setName("");
+      setDescription("");
+      setPrice("");
+      setPosition("");
+      setQuantity("");
+      setPhoto("");
     } catch (error) {
       console.log(error);
     }

@@ -59,6 +59,7 @@ export default function Page() {
       );
 
       setCategories(res.data.category);
+      console.log(res.data.category)
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -71,6 +72,7 @@ export default function Page() {
       const res = await axios.post(
         `http://localhost:7003/api/v1/category/delete-category/${id}`
       );
+     
 
       setCategories(res.data.allCategories);
     } catch (err) {

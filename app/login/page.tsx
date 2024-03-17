@@ -42,9 +42,9 @@ export default function Login() {
       loginSchema.parse(formData);
 
       // Choose the login URL based on check state
-      let URL = "http://localhost:7003/api/v1/user/login";
+      let URL = `http://localhost:7003/api/v1/user/login`;
       if (check) {
-        URL = "http://localhost:7003/api/v1/user/admin-login";
+        URL = `http://localhost:7003/api/v1/user/admin-login`;
       }
 
       // Make API call
@@ -81,7 +81,7 @@ export default function Login() {
 
       // Make API call
       const res = await axios.post(
-        "http://localhost:7003/api/v1/doctor/doctor-login",
+        `http://localhost:7003/api/v1/doctor/doctor-login`,
         formData
       );
       const doctor = {
