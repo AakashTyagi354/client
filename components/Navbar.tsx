@@ -85,7 +85,7 @@ export default function Navbar() {
   const handleNotificationDelete = async (idx: number) => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/delete-all-notification",
+        "https://doc-app-7im8.onrender.com/api/v1/user/delete-all-notification",
         {
           userId: currentUser?.id,
           idx,
@@ -105,7 +105,7 @@ export default function Navbar() {
     try {
       console.log("reached");
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/clear-all-notifications",
+        "https://doc-app-7im8.onrender.com/api/v1/user/clear-all-notifications",
         {
           userId: currentUser?.id,
         },
@@ -124,7 +124,7 @@ export default function Navbar() {
   const handleNotifications = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/get-all-notification",
+        "https://doc-app-7im8.onrender.com/api/v1/user/get-all-notification",
         {
           userId: currentUser?.id,
         },

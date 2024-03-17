@@ -18,7 +18,7 @@
 //   const getDoctorAppointments = async () => {
 //     try {
 //       const res = await axios.post(
-//         "http://localhost:7003/api/v1/doctor/doctor-appointments",
+//         "https://doc-app-7im8.onrender.com/api/v1/doctor/doctor-appointments",
 //         {
 //           doctorId: doctor?.id,
 //         },

@@ -9,7 +9,7 @@ export default function Page() {
   const getCategories = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/category/get-category"
+        "https://doc-app-7im8.onrender.com/api/v1/category/get-category"
       );
 
       setCategories(res.data.category);

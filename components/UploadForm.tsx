@@ -62,7 +62,7 @@ export default function UploadForm() {
   const handleUploadDocuments = async (url: string) => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/documents/create-document",
+        "https://doc-app-7im8.onrender.com/api/v1/documents/create-document",
         {
           userId: user?.id,
           name: file.name,

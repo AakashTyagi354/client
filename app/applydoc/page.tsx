@@ -26,7 +26,7 @@ export default function ApplyDoc() {
       const phonenumber = parseFloat(phone);
 
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/apply-doctor",
+        "https://doc-app-7im8.onrender.com/api/v1/user/apply-doctor",
         {
           firstName:firstname,
           lastName:lastname,

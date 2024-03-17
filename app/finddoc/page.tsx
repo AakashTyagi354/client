@@ -126,7 +126,7 @@ export default function Page() {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          "http://localhost:7003/api/v1/user/get-doctors"
+          "https://doc-app-7im8.onrender.com/api/v1/user/get-doctors"
         );
 
         setDocs(response.data.doctors);
@@ -151,7 +151,7 @@ export default function Page() {
       console.log("date", isDate);
       console.log("time", time);
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/booking-availbility",
+        "https://doc-app-7im8.onrender.com/api/v1/user/booking-availbility",
         {
           userId: currentUser?.id,
           doctorId: doctorId,
@@ -198,7 +198,7 @@ export default function Page() {
       const isDate = date ? date.toISOString() : null;
 
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/book-appointment",
+        "https://doc-app-7im8.onrender.com/api/v1/user/book-appointment",
         {
           userId: currentUser?.id,
           doctorId: doctorId,
@@ -274,7 +274,7 @@ export default function Page() {
         try {
           const fetchSearchResults = async () => {
             const response = await axios.get(
-              `http://localhost:7003/api/v1/doctor/search-doctors/${searchQuery}`
+              `https://doc-app-7im8.onrender.com/api/v1/doctor/search-doctors/${searchQuery}`
             );
             setSearchResults(response.data.data);
             console.log("first", response.data.data);

@@ -24,7 +24,7 @@ export default function Page() {
   const handleDoctors = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/admin/getAllDoctors",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllDoctors",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -43,7 +43,7 @@ export default function Page() {
   const handleDecotrStatus = async (doctorId: string) => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/admin/changeAccountStatus",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/changeAccountStatus",
         {
           doctorId,
           status: "approved",

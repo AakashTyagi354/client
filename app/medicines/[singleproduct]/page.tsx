@@ -22,7 +22,7 @@ export default function SigleProduct() {
   const getSingleProduct = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:7003/api/v1/product/get-product/${params.singleproduct}`
+        `https://doc-app-7im8.onrender.com/api/v1/product/get-product/${params.singleproduct}`
       );
 
       setProduct(res.data.data);
@@ -34,8 +34,8 @@ export default function SigleProduct() {
     try {
 
         const res = await axios.get(
-          // `http://localhost:7003/api/v1/product/related-product/${params.singleproduct}/${product.category._id}`
-          "http://localhost:7003/api/v1/product/related-product/65f275e83fd29bd4b8375200/65f26270649b6829b35f439f"
+          // `https://doc-app-7im8.onrender.com/api/v1/product/related-product/${params.singleproduct}/${product.category._id}`
+          "https://doc-app-7im8.onrender.com/api/v1/product/related-product/65f275e83fd29bd4b8375200/65f26270649b6829b35f439f"
         );
         console.log(res.data.data);
     
@@ -59,7 +59,7 @@ export default function SigleProduct() {
             <div className="w-full mt-12 flex flex-col ">
               <div className="w-full flex items-center justify-center">
                 <Image
-                  src={`http://localhost:7003/api/v1/product/product-photo/${product._id}`}
+                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${product._id}`}
                   alt=""
                   height={100}
                   width={100}

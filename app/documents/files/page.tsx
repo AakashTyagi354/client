@@ -18,7 +18,7 @@ export default function Files() {
   const getAllDocuments = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/documents/getall-document",
+        "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document",
         {
           userId: user?.id,
         },
@@ -38,7 +38,7 @@ export default function Files() {
   const handleDeleteDocument = async (documentId: string) => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/documents/delete-document",
+        "https://doc-app-7im8.onrender.com/api/v1/documents/delete-document",
         {
           documentId,
         },

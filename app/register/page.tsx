@@ -16,7 +16,7 @@ export default function Register() {
   const handleRegister = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/user/register",
+        "https://doc-app-7im8.onrender.com/api/v1/user/register",
         {
           name: username,
           email,

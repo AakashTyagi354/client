@@ -36,7 +36,7 @@ export default function Page() {
   const handleCreateCat = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/category/create-category",
+        "https://doc-app-7im8.onrender.com/api/v1/category/create-category",
         {
           name: category,
         },
@@ -55,7 +55,7 @@ export default function Page() {
   const getCategories = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/category/get-category"
+        "https://doc-app-7im8.onrender.com/api/v1/category/get-category"
       );
 
       setCategories(res.data.category);
@@ -70,7 +70,7 @@ export default function Page() {
   const handleDeleteCategory = async (id: string) => {
     try {
       const res = await axios.post(
-        `http://localhost:7003/api/v1/category/delete-category/${id}`
+        `https://doc-app-7im8.onrender.com/api/v1/category/delete-category/${id}`
       );
      
 
@@ -82,7 +82,7 @@ export default function Page() {
   const handleUpdateCategory = async (id: string) => {
     try {
       const res = await axios.post(
-        `http://localhost:7003/api/v1/category/update-category/${id}`,
+        `https://doc-app-7im8.onrender.com/api/v1/category/update-category/${id}`,
         {
           name: updateStr,
         }

@@ -18,7 +18,7 @@ export default function Page() {
   const getProducts = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/product/get-product"
+        "https://doc-app-7im8.onrender.com/api/v1/product/get-product"
       );
 
       setProducts(res.data.products);
@@ -64,7 +64,7 @@ export default function Page() {
               <Link href={`/medicines/${ele._id}`} key={idx}>
                 <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
                   <Image
-                    src={`http://localhost:7003/api/v1/product/product-photo/${ele._id}`}
+                    src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele._id}`}
                     alt=""
                     height={100}
                     width={100}

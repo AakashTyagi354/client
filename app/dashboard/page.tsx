@@ -25,7 +25,7 @@ export default function Dashboard() {
   const handleUsers = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/admin/getAllUser",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllUser",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -40,7 +40,7 @@ export default function Dashboard() {
   const handleDoctors = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/admin/getAllDoctors",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllDoctors",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -56,7 +56,7 @@ export default function Dashboard() {
   const handleDecotrStatus = async (doctorId: string) => {
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/admin/changeAccountStatus",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/changeAccountStatus",
         {
           doctorId,
           status: "approved",

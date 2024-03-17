@@ -19,7 +19,7 @@ export default function Page() {
   const handleUsers = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/admin/getAllUser",
+        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllUser",
         {
           headers: {
             Authorization: `Bearer ${token}`,

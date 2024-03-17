@@ -35,7 +35,7 @@ export default function Page() {
   const getCategories = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:7003/api/v1/category/get-category"
+        "https://doc-app-7im8.onrender.com/api/v1/category/get-category"
       );
 
       setCategories(res.data.category);
@@ -50,7 +50,7 @@ export default function Page() {
     console.log("reached");
     try {
       const res = await axios.post(
-        "http://localhost:7003/api/v1/product/create-product",
+        "https://doc-app-7im8.onrender.com/api/v1/product/create-product",
         {
           name,
           description,
@@ -83,7 +83,7 @@ export default function Page() {
       productData.append("category", position);
       console.log(productData);
       const { data } = await axios.post(
-        "http://localhost:7003/api/v1/product/create-product",
+        "https://doc-app-7im8.onrender.com/api/v1/product/create-product",
         productData,
         {
           headers: {

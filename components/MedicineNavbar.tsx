@@ -44,7 +44,7 @@ export default function MedicineNavbar() {
         try {
           const fetchSearchResults = async () => {
             const response = await axios.get(
-              `http://localhost:7003/api/v1/product/search/${searchTerm}`
+              `https://doc-app-7im8.onrender.com/api/v1/product/search/${searchTerm}`
             );
             setSearchResults(response.data);
           };

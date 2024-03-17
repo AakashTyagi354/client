@@ -46,7 +46,7 @@ export default function CartPage() {
   const checkoutHandler = async (amount: number) => {
     const {
       data: { order },
-    } = await axios.post("http://localhost:7003/api/v1/payment/checkout", {
+    } = await axios.post("https://doc-app-7im8.onrender.com/api/v1/payment/checkout", {
       amount,
     });
     await loadRazorpayScript();
@@ -58,7 +58,7 @@ export default function CartPage() {
       description: "Doctor appointment",
       image: "https://avatars.githubusercontent.com/u/78840211?v=4",
       order_id: order.id,
-      callback_url: "http://localhost:7003/api/v1/payment/paymentverificaion",
+      callback_url: "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
       prefill: {
         name: "Gaurav Kumar",
         email: "gaurav.kumar@example.com",
@@ -89,7 +89,7 @@ export default function CartPage() {
                 className="h-[280px] flex items-center w-[85%] border-b border-dotted border-gray-300   "
               >
                 <Image
-                  src={`http://localhost:7003/api/v1/product/product-photo/${ele.productId}`}
+                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele.productId}`}
                   alt=""
                   height={100}
                   width={100}
