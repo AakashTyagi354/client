@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { CiChat1 } from "react-icons/ci";
 
-export const healthConcernsData = [
+const healthConcernsData = [
   {
     title: "Cold & Cough",
     price: 399,
