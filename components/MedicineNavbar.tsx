@@ -7,9 +7,14 @@ import { MdOutlineAddShoppingCart, MdShoppingCart } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, selectCartItems } from "@/redux/cartSlice";
 import Link from "next/link";
-import { MouseEventHandler, useState, useEffect, useRef } from "react";
+import {
+  MouseEventHandler,
+  useState,
+  useEffect,
+  useRef,
+  MutableRefObject,
+} from "react";
 import axios from "axios";
-
 
 export default function MedicineNavbar() {
   const dispatch = useDispatch();
@@ -18,7 +23,8 @@ export default function MedicineNavbar() {
   const [searchTerm, setSearchTerm] = useState(""); // State to hold the search term
   const [searchResults, setSearchResults] = useState([]); // State to hold the search results
 
-  const searchTimeoutRef = useRef(null); // Ref to store the timeout for debouncing
+  const searchTimeoutRef: MutableRefObject<NodeJS.Timeout | null> =
+    useRef(null);
 
   // Function to handle input box click
   const handleInputClick = () => {
@@ -26,7 +32,7 @@ export default function MedicineNavbar() {
   };
 
   // Function to handle input change with debouncing
-  const handleInputChange = (event) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value;
     setSearchTerm(inputValue.trim());
   };
@@ -59,13 +65,15 @@ export default function MedicineNavbar() {
 
     // Cleanup function to clear timeout when search term changes
     return () => {
-      clearTimeout(searchTimeoutRef.current);
+      if (searchTimeoutRef.current !== null) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
   }, [searchTerm]);
 
   // Function to handle clicking outside the search box to close the suggestions
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: any) => {
       if (view && !event.target.closest(".search-container")) {
         setView(false);
       }
@@ -78,7 +86,7 @@ export default function MedicineNavbar() {
     };
   }, [view]);
 
-  const handleCart: MouseEventHandler<HTMLButtonElement> = (item: any) => {
+  const handleCart = (item: ProductInputProps) => {
     dispatch(
       addToCart({
         productId: item._id,
@@ -107,7 +115,7 @@ export default function MedicineNavbar() {
             />
             {view && (
               <div className="w-full flex flex-col gap-4 max-h-[300px] py-4  overflow-y-scroll bg-gray-50 absolute top-[37px] left-0">
-                {searchResults.map((ele, idx) => (
+                {searchResults.map((ele: ProductInputProps, idx) => (
                   <Link href={`/medicines/${ele._id}`} key={idx}>
                     <div className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 ">
                       <p className="text-sm text-gray-500 tracking-wide">

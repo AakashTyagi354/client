@@ -38,7 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import img3 from "../../public/images/img3.jpeg";
 // import DatePicker from "react-datepicker";
@@ -243,10 +243,10 @@ export default function Page() {
   const currentPosts = memoizedDocs.slice(firstPostIndex, lastPostIndex);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]); // State to hold the search results
-
+  type Timeout = NodeJS.Timeout | number | undefined;
   // for search and debouncing queries
   const [view, setView] = useState(false);
-  const searchTimeoutRef = useRef(null);
+  const searchTimeoutRef: MutableRefObject<Timeout | null> = useRef(null);
 
   // Function to handle input box click
   const handleInputClick = () => {
@@ -290,13 +290,16 @@ export default function Page() {
 
     // Cleanup function to clear timeout when search term changes
     return () => {
-      clearTimeout(searchTimeoutRef.current);
+      if (searchTimeoutRef.current !== null) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
   }, [searchQuery]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (view && !event.target.closest(".search-container")) {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element | null; // Narrow down the type to Element or null
+      if (view && target && !target.closest(".search-container")) {
         setView(false);
       }
     };
@@ -400,7 +403,7 @@ export default function Page() {
                             defaultValue={dayjs(getTodaysDate(), dateFormat)}
                             minDate={dayjs(getTodaysDate(), dateFormat)}
                             maxDate={dayjs("2030-10-31", dateFormat)}
-                            onChange={(date) => setStartDate(date)}
+                            onChange={(date: any) => setStartDate(date)}
                             className="w-full"
                             format={dateFormat}
                           />
@@ -468,6 +471,7 @@ export default function Page() {
                 <select
                   className="w-[130px]  focus:outline-none outline-none text-sm text-gray-600 rounded-md"
                   onChange={(e) => setSelectedSpecialization(e.target.value)}
+                  defaultValue=""
                 >
                   <option value="" disabled selected hidden>
                     Specializations
@@ -588,6 +592,7 @@ export default function Page() {
                               defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
                               maxDate={dayjs("2030-10-31", dateFormat)}
+                              // @ts-ignore
                               onChange={(date) => setStartDate(date)}
                               className="w-full"
                               format={dateFormat}
