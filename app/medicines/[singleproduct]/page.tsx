@@ -16,7 +16,14 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function SigleProduct() {
-  const [product, setProduct] = useState({});
+  // const [product, setProduct] = useState({});
+  const [product, setProduct] = useState({
+    _id: "",
+    price: "",
+    name: "",
+    description: "",
+    category: { _id: "" },
+  });
   const params = useParams();
 
   const getSingleProduct = async () => {
@@ -32,13 +39,11 @@ export default function SigleProduct() {
   };
   const getSimilarProducts = async () => {
     try {
-
-        const res = await axios.get(
-          // `https://doc-app-7im8.onrender.com/api/v1/product/related-product/${params.singleproduct}/${product.category._id}`
-          "https://doc-app-7im8.onrender.com/api/v1/product/related-product/65f275e83fd29bd4b8375200/65f26270649b6829b35f439f"
-        );
-        console.log(res.data.data);
-    
+      const res = await axios.get(
+        // `https://doc-app-7im8.onrender.com/api/v1/product/related-product/${params.singleproduct}/${product.category._id}`
+        "https://doc-app-7im8.onrender.com/api/v1/product/related-product/65f275e83fd29bd4b8375200/65f26270649b6829b35f439f"
+      );
+      console.log(res.data.data);
     } catch (err) {
       console.log("Error in getSimilarProducts", err);
     }
