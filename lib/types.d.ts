@@ -41,5 +41,15 @@ interface ProductInputProps {
   quantity: number;
   photo: object;
   shipping: boolean;
-  name:string
+  name: string;
+}
+
+interface AppointmentInputProps {
+  userId: string;
+  doctorId: string;
+  doctorInfo: string;
+  userInfo: string;
+  date: string;
+  time: string;
+  roomId: string;
 }

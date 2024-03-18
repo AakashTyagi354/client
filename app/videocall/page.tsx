@@ -44,7 +44,9 @@ export default function VideCall() {
 const UserAppointments = () => {
   const user = useSelector(selectUser);
   const token = useSelector(selectToken);
-  const [userAppointments, setUserAppointments] = useState([]);
+  const [userAppointments, setUserAppointments] = useState<
+    AppointmentInputProps[]
+  >([]);
 
   const getUserAppointments = async () => {
     try {
@@ -89,30 +91,18 @@ const UserAppointments = () => {
               </TableRow>
             </TableHeader>
             <TableBody className="mt-6">
-              {userAppointments.map(
-                (
-                  ele: {
-                    doctorInfo: string;
-                    date: string;
-                    time: string;
-                    roomId: string;
-                  },
-                  idx
-                ) => (
-                  <TableRow key={idx}>
-                    <TableHead className="w-[100px]">
-                      {ele?.doctorInfo}
-                    </TableHead>
-                    <TableHead>{ele?.date}</TableHead>
-                    <TableHead>{ele?.time}</TableHead>
-                    <TableHead className="text-right">
-                      <Link href={`/videocall/${ele.roomId}`}>
-                        <Button>Join the meet</Button>
-                      </Link>
-                    </TableHead>
-                  </TableRow>
-                )
-              )}
+              {userAppointments.map((ele: AppointmentInputProps, idx) => (
+                <TableRow key={idx}>
+                  <TableHead className="w-[100px]">{ele?.doctorInfo}</TableHead>
+                  <TableHead>{ele?.date}</TableHead>
+                  <TableHead>{ele?.time}</TableHead>
+                  <TableHead className="text-right">
+                    <Link href={`/videocall/${ele.roomId}`}>
+                      <Button>Join the meet</Button>
+                    </Link>
+                  </TableHead>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -123,7 +113,9 @@ const UserAppointments = () => {
 
 const PatientAppointments = () => {
   const doctor = useSelector(selectDoctor);
-  const [doctorAppointments, setDoctorAppointments] = useState([]);
+  const [doctorAppointments, setDoctorAppointments] = useState<
+    AppointmentInputProps[]
+  >([]);
   const token = useSelector(selectDocToken);
 
   const getDoctorAppointments = async () => {
@@ -152,7 +144,7 @@ const PatientAppointments = () => {
     <>
       <div>
         <p className="text-2xl tracking-widert text-gray-600 text-center my-6">
-          Welcome {doctor?.firstName} to your Patient appointments
+          Welcome {doctor?.name} to your Patient appointments
         </p>
         <div>
           <Table>
@@ -170,7 +162,7 @@ const PatientAppointments = () => {
               </TableRow>
             </TableHeader>
             <TableBody className="mt-6">
-              {doctorAppointments.map((ele, idx) => (
+              {doctorAppointments.map((ele: AppointmentInputProps, idx) => (
                 <TableRow key={idx}>
                   <TableHead className="w-[100px]">{ele.userInfo}</TableHead>
                   <TableHead>{ele.date}</TableHead>
