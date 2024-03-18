@@ -1,6 +1,12 @@
 import { File, X } from "lucide-react";
 
-export default function FilePrevies({ file, removeFile }) {
+export default function FilePrevies({
+  file,
+  removeFile,
+}: {
+  file: File;
+  removeFile: () => void;
+}) {
   return (
     <div className="flex items-center gap-2 justify-between mt-5 border rounded-md p-2 border-b-gray-400 ">
       <div className="flex items-center p-2">

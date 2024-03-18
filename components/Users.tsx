@@ -12,7 +12,7 @@ import Link from "next/link";
 export default function Users() {
   const doctor = useSelector(selectDoctor);
   const token = useSelector(selectDocToken);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<AppointmentInputProps[]>([]);
   const [selectedUserIndex, setSelectedUserIndex] = useState(-1);
 
   const getDoctorAppointments = async () => {
@@ -42,7 +42,7 @@ export default function Users() {
     getDoctorAppointments();
   }, []);
 
-  const handleUserClick = (index) => {
+  const handleUserClick = (index: number) => {
     setSelectedUserIndex(index);
   };
 

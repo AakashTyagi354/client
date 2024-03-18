@@ -20,20 +20,35 @@ export default function UploadForm() {
   const token = useSelector(selectToken);
   const user = useSelector(selectUser);
 
-  const [file, setFile] = useState();
+  const [file, setFile] = useState<File | null>(null);
   const storage = getStorage(app);
   const [progress, setProgress] = useState(0);
 
-  const onFileSelect = (file) => {
-    if (file && file.size > 2000000) {
-      alert("size is to greater than 2000000");
-      return;
+  // const onFileSelect = (file:File) => {
+  //   if (file && file.size > 2000000) {
+  //     alert("size is to greater than 2000000");
+  //     return;
+  //   }
+  //   setFile(file);
+  // };
+  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]; // Use optional chaining to handle null
+    if (selectedFile) {
+      if (selectedFile.size > 2000000) {
+        alert("Size is greater than 2MB");
+      } else {
+        setFile(selectedFile);
+      }
     }
-    setFile(file);
   };
-  const handleFileUpload = (file) => {
+  const metadata = {
+    contentType: file?.type || "application/octet-stream", // Use the type property of the File object, or fallback to a default value
+  };
+  const handleFileUpload = (file: File) => {
     const storageRef = ref(storage, "file-upload/" + file?.name);
-    const uploadTask = uploadBytesResumable(storageRef, file, file?.type);
+    // const uploadTask = uploadBytesResumable(storageRef, file, file?.type);
+
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
     uploadTask.on("state_changed", (snapshot) => {
       const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -60,6 +75,10 @@ export default function UploadForm() {
   };
 
   const handleUploadDocuments = async (url: string) => {
+    if (!file) {
+      console.error("No file selected");
+      return;
+    }
     try {
       const res = await axios.post(
         "https://doc-app-7im8.onrender.com/api/v1/documents/create-document",
@@ -114,7 +133,7 @@ export default function UploadForm() {
             </p>
           </div>
           <input
-            onChange={(e) => onFileSelect(e.target.files[0])}
+            onChange={onFileSelect}
             id="dropzone-file"
             type="file"
             className="hidden"
@@ -124,7 +143,7 @@ export default function UploadForm() {
       {file && <FilePrevies file={file} removeFile={() => setFile(null)} />}
       <button
         disabled={!file}
-        onClick={() => handleFileUpload(file)}
+        onClick={() => file && handleFileUpload(file)}
         className="p-2 w-[30%] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-full mt-5 bg-gray-200"
       >
         Upload
