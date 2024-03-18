@@ -26,7 +26,7 @@ export default function Page() {
         <div className="flex">
           <div className="h-[500px]">
             <div className="fixed left-0 top-16 w-[350px] border-r  border-gray-200 my-28 overflow-y-auto h-[600px]">
-              <div className=" ml-20 mr-12">
+              {/* <div className=" ml-20 mr-12">
                 <p className="text-gray-600 font-semibold border-b border-gray-200 pb-4">
                   CATEGORIES
                 </p>
@@ -41,7 +41,7 @@ export default function Page() {
                     </p>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto ml-[350px]">
