@@ -31,41 +31,41 @@ export default function Files() {
     );
   }
 
-  const getAllDocuments = async () => {
-    if (user === null) {
-      return (
-        <>
-          <p className="text-gray-500 text-center my-24">
-            Pls{" "}
-            <Link href={"/login"} className="text-blue-500">
-              {" "}
-              login
-            </Link>{" "}
-            to see your documents
-          </p>
-          <DemoIds />
-        </>
-      );
-    } else {
-      try {
-        const res = await axios.post(
-          "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document",
-          {
-            userId: user?.id,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log(res.data.documents);
-        setDocuments(res.data.documents);
-      } catch (err) {
-        console.log("ERROR IN UPLOADING Documents", err);
-      }
-    }
-  };
+  // const getAllDocuments = async () => {
+  //   if (user === null) {
+  //     return (
+  //       <>
+  //         <p className="text-gray-500 text-center my-24">
+  //           Pls{" "}
+  //           <Link href={"/login"} className="text-blue-500">
+  //             {" "}
+  //             login
+  //           </Link>{" "}
+  //           to see your documents
+  //         </p>
+  //         <DemoIds />
+  //       </>
+  //     );
+  //   } else {
+  //     try {
+  //       const res = await axios.post(
+  //         "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document",
+  //         {
+  //           userId: user?.id,
+  //         },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+  //       console.log(res.data.documents);
+  //       setDocuments(res.data.documents);
+  //     } catch (err) {
+  //       console.log("ERROR IN UPLOADING Documents", err);
+  //     }
+  //   }
+  // };
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
@@ -87,8 +87,30 @@ export default function Files() {
   };
 
   useEffect(() => {
-    getAllDocuments();
-  }, [handleDeleteDocument]);
+    const fetchData = async () => {
+      if (user !== null) {
+        try {
+          const res = await axios.post(
+            "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document",
+            {
+              userId: user.id,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          console.log(res.data.documents);
+          setDocuments(res.data.documents);
+        } catch (err) {
+          console.log("ERROR IN UPLOADING Documents", err);
+        }
+      }
+    };
+  
+    fetchData();
+  }, [user, token]);
 
   if (user?.isAdmin) {
     return (
