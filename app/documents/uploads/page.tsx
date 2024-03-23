@@ -1,4 +1,5 @@
 "use client";
+import DemoIds from "@/components/DemoIds";
 import UploadForm from "@/components/UploadForm";
 import { selectUser } from "@/redux/userSlice";
 import Link from "next/link";
@@ -8,11 +9,19 @@ export default function Uploads() {
   const user = useSelector(selectUser);
   if (user === null) {
     return (
-      <p className="text-gray-500 text-center my-24">
-        Pls <span>
-          <Link href={"/login"} className="text-blue-500"> login</Link>
-          </span> to upload your documents
-      </p>
+      <>
+        <p className="text-gray-500 text-center my-24">
+          Pls{" "}
+          <span>
+            <Link href={"/login"} className="text-blue-500">
+              {" "}
+              login
+            </Link>
+          </span>{" "}
+          to upload your documents
+        </p>
+        <DemoIds />
+      </>
     );
   } else {
     if (user?.isAdmin) {

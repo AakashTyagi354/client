@@ -19,6 +19,7 @@ import {
   selectToken as selectDocToken,
 } from "@/redux/doctorSlice";
 import Link from "next/link";
+import DemoIds from "@/components/DemoIds";
 
 export default function VideCall() {
   const userToken = useSelector(selectToken);
@@ -42,13 +43,16 @@ export default function VideCall() {
     );
   } else {
     return (
-      <p className="text-gray-500 text-center my-52">
-        {" "}
-        Please login to check your upcoming appointments
-        <span className="text-blue-500">
-          <Link href={"/login"}> login</Link>
-        </span>
-      </p>
+      <>
+        <p className="text-gray-500 text-center mt-52">
+          {" "}
+          Please login to check your upcoming appointments
+          <span className="text-blue-500">
+            <Link href={"/login"}> login</Link>
+          </span>
+        </p>
+        <DemoIds />
+      </>
     );
   }
 }

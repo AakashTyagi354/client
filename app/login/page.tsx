@@ -25,6 +25,7 @@ import { setDoctor } from "@/redux/doctorSlice";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
+import DemoIds from "@/components/DemoIds";
 // Define Zod schema for validation
 const formSchema = z.object({
   email: z.string().min(2).max(50),
@@ -130,13 +131,13 @@ export default function Login() {
     return (
       <>
         <div className="w-full h-screen ">
-          <WidthWrapper className=" h-screen flex justify-center ">
+          <WidthWrapper className=" h-screen flex flex-col justify-center ">
             <Tabs defaultValue="user" className="w-[400px]   mx-auto pt-24 ">
               <TabsList className="w-full h-12 bg-gray-50">
                 <TabsTrigger value="user">Patient Login</TabsTrigger>
                 <TabsTrigger value="doctor">Doctor Login</TabsTrigger>
               </TabsList>
-              <TabsContent value="user" >
+              <TabsContent value="user">
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(handleLogin)}
@@ -174,7 +175,7 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                    <p className="text-gray-500"> 
+                    <p className="text-gray-500">
                       Do not have an account?
                       <span className="text-blue-500">
                         <Link href={"/register"}> register</Link>
@@ -228,7 +229,7 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                     <p className="text-gray-500"> 
+                    <p className="text-gray-500">
                       Do not have an account as a doctor?
                       <span className="text-blue-500">
                         <Link href={"/applydoc"}> apply</Link>
@@ -245,6 +246,7 @@ export default function Login() {
                 </Form>
               </TabsContent>
             </Tabs>
+            <DemoIds />
           </WidthWrapper>
         </div>
       </>
