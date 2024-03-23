@@ -116,20 +116,22 @@ export default function MedicineNavbar() {
             {view && (
               <div className="w-full flex flex-col gap-4 max-h-[300px] py-4  overflow-y-scroll bg-gray-50 absolute top-[37px] left-0">
                 {searchResults.map((ele: ProductInputProps, idx) => (
-                  <Link href={`/medicines/${ele._id}`} key={idx}>
+                  <div key={idx}>
                     <div className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 ">
-                      <p className="text-sm text-gray-500 tracking-wide">
-                        {" "}
-                        {textFormater(ele.name, 30)}
-                      </p>
+                      <Link href={`/medicines/${ele._id}`}>
+                        <p className="text-sm text-gray-500 tracking-wide">
+                          {" "}
+                          {textFormater(ele.name, 30)}
+                        </p>
+                      </Link>
                       <button
                         onClick={() => handleCart(ele)}
-                        className="px-4 py-1 text-sm text-gray-500 border border-[#15BEF0] transition-all hover:bg-[#15BEF0] hover:text-white"
+                        className="px-4 py-1 text-sm text-gray-500 border border-[#78355B] transition-all hover:bg-[#78355B] hover:text-white"
                       >
                         Add
                       </button>
                     </div>
-                  </Link>
+                  </div>
                 ))}
 
                 {searchResults.length === 0 && (
@@ -143,7 +145,7 @@ export default function MedicineNavbar() {
 
           <div className="">
             <Link href={"/medicines/cartpage"}>
-              <Button className="bg-[#15BEF0] transition-all rounded-none flex gap-4 relative">
+              <Button className=" bg-[#78355B] hover:bg-[#78355B] hover:opacity-95 transition-all rounded-none flex gap-4 relative">
                 <MdShoppingCart size={20} />
                 <div className="rounded-full h-5 w-5 bg-white absolute top-[2px] left-[25px] text-gray-700">
                   {cart.length}

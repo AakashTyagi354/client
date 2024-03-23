@@ -75,7 +75,7 @@ export default function Medicines() {
     setLoading(true); // Show loader immediately
 
     try {
-      await delay(2000);
+      await delay(1000);
       const res = await axios.get(
         `https://doc-app-7im8.onrender.com/api/v1/product/product-list/${pageNumber}`
       );
@@ -110,13 +110,13 @@ export default function Medicines() {
       <div className="h-[300px] bg-[#E4F2EA] flex items-center justify-center">
         <Image src={img3} alt="" className="w-[80%] h-full" />
       </div>
-      <WidthWrapper className=" h-full">
+      <WidthWrapper className="h-full">
         <p className="font-semibold mt-12 text-2xl text-gray-700 tracking-wider">
           Browse medicines & health products
         </p>
         <div className="mt-6 ">
           <p className="text-gray-500">Popular Categories</p>
-          <div className="w-full h-[200px]  flex gap-3 mt-4">
+          <div className="w-[50%] mx-auto  md:w-full  md:h-[200px]   flex flex-col md:flex-row gap-3 mt-4">
             {categories.map((ele, idx) => (
               <div key={idx} className="w-[200px] flex flex-col cursor-pointer">
                 <Image
@@ -133,7 +133,7 @@ export default function Medicines() {
         </div>
         <div className="my-12">
           <p className="text-gray-500">Trending Products</p>
-          <div className="w-full flex flex-wrap gap-12 mt-6">
+          <div className="w-[50%] mx-auto  md:w-full  flex flex-wrap gap-12 mt-6">
             {products.map((ele: ProductInputProps, idx) => (
               <Link href={`/medicines/${ele._id}`} key={idx}>
                 <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">

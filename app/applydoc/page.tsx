@@ -127,7 +127,7 @@ export default function ApplyDoc() {
               here
             </p>
             <Button
-              className="w-full mt-2"
+              className="w-full mt-2 bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
               variant={"default"}
               onClick={handleRegister}
             >

@@ -28,8 +28,9 @@ import {
   TicketCheck,
 } from "lucide-react";
 import { CiChat1 } from "react-icons/ci";
+import Link from "next/link";
 
- const healthConcernsData = [
+const healthConcernsData = [
   {
     title: "Cold & Cough",
     price: 399,
@@ -92,9 +93,11 @@ export default function Home() {
               consultations with expert physicians, anytime and anywhere.
             </p>
             <div className="w-full">
-              <Button className="w-[50%] mt-8  bg-[#387693]">
-                Check out doctors
-              </Button>
+              <Link href={"/finddoc"}>
+                <Button className="w-[50%] mt-8  bg-[#78355B] hover:bg-[#78355B] hover:opacity-95">
+                  Check out doctors
+                </Button>
+              </Link>
             </div>
           </div>
           <div className=" hidden md:block md:flex-1">
@@ -202,7 +205,7 @@ export default function Home() {
                       <p className="ml-2  text-sm font-bold text-gray-600">
                         ₹{item.price}{" "}
                       </p>
-                      <button className="flex items-center gap-2 ml-2 mt-4 text-[#15bef0]">
+                      <button className="flex items-center gap-2 ml-2 mt-4 text-[#cd5555]">
                         Book Appoitment <ArrowRight />{" "}
                       </button>
                     </div>

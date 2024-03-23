@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useEffect, useState } from "react";
 import WidthWrapper from "./WidthWrapper";
 import Link from "next/link";
@@ -7,6 +9,8 @@ import { clearUser, selectToken, selectUser } from "@/redux/userSlice";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { HiOutlineMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
+import logoImg from "../public/logoImg.png"
+import { FaRegShareSquare } from "react-icons/fa";
 import {
   Sheet,
   SheetContent,
@@ -31,6 +35,7 @@ import {
   selectToken as selectDocToken,
 } from "@/redux/doctorSlice";
 import { Trash2 } from "lucide-react";
+import Image from "next/image";
 
 const navlinks = [
   {
@@ -42,13 +47,14 @@ const navlinks = [
     href: "/videocall",
   },
   {
-    link: "Medicines",
-    href: "/medicines",
-  },
-  {
     link: "Documents",
     href: "/documents/files",
   },
+  {
+    link: "Medicines",
+    href: "/medicines",
+  },
+  
 ];
 const doctorLinks = [
   {
@@ -147,7 +153,7 @@ export default function Navbar() {
       <WidthWrapper className=" h-16 flex items-center justify-between">
         <div className=" w-[200px] md:w-[600px]">
           <Link className="font-bold text-xl" href={"/"}>
-            Logo
+            <Image src={logoImg} alt="" height={50} width={100}/>
           </Link>
         </div>
         <div className="hidden  md:flex flex-grow w-full justify-between ">
@@ -227,11 +233,14 @@ export default function Navbar() {
 
             <Link href={"/login"} className="ml-4">
               {token || docToken ? (
-                <Button variant={"ghost"} onClick={handleLogout}>
+                <Button variant={"ghost"} onClick={handleLogout} className="flex gap-2">
+                  <FaRegShareSquare size={20}/>
                   Logout
                 </Button>
               ) : (
-                <Button variant={"ghost"}>Login</Button>
+                <Button variant={"ghost"} className="flex gap-2">
+                     <FaRegShareSquare size={20}/>
+                  Login</Button>
               )}
             </Link>
           </div>

@@ -310,7 +310,7 @@ export default function Page() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [view]);
-  const dateFormat = "DD-MM-YYYY";
+  const dateFormat = "YYYY-MM-DD";
   const timeFormat = "HH:mm";
 
   // State variables to hold the selected filter options
@@ -364,7 +364,7 @@ export default function Page() {
   return (
     <div>
       <WidthWrapper>
-        <div className="w-full h-[400px] bg-[#387693] relative">
+        <div className="w-full h-[400px] bg-[#78355b] relative">
           <Image
             src={homeImg}
             layout="fill"
@@ -440,7 +440,7 @@ export default function Page() {
                                 ele.firstName
                               )
                             }
-                            className="w-full"
+                            className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
                           >
                             {" "}
                             Book{" "}
@@ -510,7 +510,7 @@ export default function Page() {
                     Experience high - low
                   </option>
                 </select>
-                <Button onClick={handleFilter}>Apply Filter</Button>
+                <Button onClick={handleFilter} className="bg-[#78355b]">Apply Filter</Button>
               </div>
             </div>
             <div className="">
@@ -589,7 +589,7 @@ export default function Page() {
                         <div className="w-[35%]  ">
                           <div className="flex flex-col items-center  justify-center h-[50%]">
                             <DatePicker
-                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
+                              // defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
                               maxDate={dayjs("2030-10-31", dateFormat)}
                               // @ts-ignore
@@ -623,7 +623,7 @@ export default function Page() {
 
                           <AlertDialog>
                             <AlertDialogTrigger className="w-full">
-                              <Button className="w-full mx-auto    text-[12px]  bg-[#185B71]">
+                              <Button className="w-full mx-auto    text-[12px]  bg-[#78355b] hover:bg-[#78355B] hover:opacity-95">
                                 Book Appoitment
                               </Button>
                             </AlertDialogTrigger>
@@ -850,6 +850,7 @@ function getTodaysDate() {
   const month = String(currentDate.getMonth() + 1).padStart(2, "0");
   const day = String(currentDate.getDate()).padStart(2, "0");
   const formattedDate = `${year}-${month}-${day}`;
+  console.log(formattedDate)
   return formattedDate;
 }
 

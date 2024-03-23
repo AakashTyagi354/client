@@ -17,6 +17,9 @@ import { CiTrash } from "react-icons/ci";
 import { ArrowRight, FileQuestionIcon } from "lucide-react";
 import { IoHomeOutline } from "react-icons/io5";
 import axios from "axios";
+import { selectUser } from "@/redux/userSlice";
+import { toast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 declare global {
   interface Window {
     Razorpay: any; // or specify the type of Razorpay object if known
@@ -24,8 +27,10 @@ declare global {
 }
 
 export default function CartPage() {
+  const user = useSelector(selectUser);
   const cart = useSelector(selectCartItems);
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const handleIncrement = (productId: string) => {
     dispatch(incrementQuantity(productId));
@@ -49,45 +54,53 @@ export default function CartPage() {
   };
 
   const checkoutHandler = async (amount: number) => {
-    const {
-      data: { order },
-    } = await axios.post(
-      "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",
-      {
-        amount,
-      }
-    );
-    await loadRazorpayScript();
-    const options = {
-      key: "rzp_test_fb6ALoOgdu9yem",
-      amount: order.amount,
-      currency: "INR",
-      name: "Delma",
-      description: "Doctor appointment",
-      image: "https://avatars.githubusercontent.com/u/78840211?v=4",
-      order_id: order.id,
-      callback_url:
-        "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
-      prefill: {
-        name: "Gaurav Kumar",
-        email: "gaurav.kumar@example.com",
-        contact: "9000090000",
-      },
-      notes: {
-        address: "Razorpay Corporate Office",
-      },
-      theme: {
-        color: "#121212",
-      },
-    };
-    const razor = new window.Razorpay(options);
-    razor.open();
+    if (user === null) {
+      toast({
+        variant: "destructive",
+        description: "pls login to buy from delma",
+      });
+      router.push("/login");
+    } else {
+      const {
+        data: { order },
+      } = await axios.post(
+        "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",
+        {
+          amount,
+        }
+      );
+      await loadRazorpayScript();
+      const options = {
+        key: "rzp_test_fb6ALoOgdu9yem",
+        amount: order.amount,
+        currency: "INR",
+        name: "Delma",
+        description: "Doctor appointment",
+        image: "https://avatars.githubusercontent.com/u/78840211?v=4",
+        order_id: order.id,
+        callback_url:
+          "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
+        prefill: {
+          name: "Gaurav Kumar",
+          email: "gaurav.kumar@example.com",
+          contact: "9000090000",
+        },
+        notes: {
+          address: "Razorpay Corporate Office",
+        },
+        theme: {
+          color: "#121212",
+        },
+      };
+      const razor = new window.Razorpay(options);
+      razor.open();
+    }
   };
-  console.log(cart);
+
   return (
     <div>
       <WidthWrapper>
-        <div className="flex">
+        <div className="flex flex-col lg:flex-row ">
           <div className="flex-grow mt-12">
             <p className="text-xl font-semibold text-gray-600">
               {cart.length} items added to cart
@@ -95,7 +108,7 @@ export default function CartPage() {
             {cart.map((ele, idx) => (
               <div
                 key={idx}
-                className="h-[280px] flex items-center w-[85%] border-b border-dotted border-gray-300   "
+                className="h-[380]  lg:h-[280px] flex flex-col lg:flex-row items-center w-[85%] border-b border-dotted border-gray-300   "
               >
                 <Image
                   src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele.productId}`}
@@ -206,10 +219,10 @@ export default function CartPage() {
                 </div>
               </div>
               <Button
-                className="w-full bg-red-500 mt-6 "
-                onClick={() => checkoutHandler(3000)}
+                className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95 mt-6 "
+                onClick={() => checkoutHandler(totalMRP(cart))}
               >
-                Continue
+                proceed to payment
               </Button>
             </div>
           </div>

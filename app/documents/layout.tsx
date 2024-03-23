@@ -10,15 +10,15 @@ export default function Layout({
   return (
     <>
       <main className="flex">
-        <div className="min-w-[260px] flex flex-col gap-6 h-[700px] border-r my-12">
-          <Link href={"/documents/files"} className="flex items-center justify-start">
-            <Button variant={"ghost"} className="flex w-[90%] items-start mx-auto gap-2">
+        <div className="min-w-[260px] flex  flex-col gap-6 h-[700px] border-r my-12">
+          <Link href={"/documents/files"}>
+            <Button variant={"ghost"} className="flex items-center justify-start w-[90%]   mx-auto gap-2">
               <File />
               View Documents{" "}
             </Button>
           </Link>
           <Link href={"/documents/uploads"}>
-            <Button variant={"ghost"} className="flex w-[90%] mx-auto gap-2">
+            <Button variant={"ghost"} className="flex items-center justify-start w-[90%] mx-auto gap-2">
               <Upload />
               Uploads Documents{" "}
             </Button>

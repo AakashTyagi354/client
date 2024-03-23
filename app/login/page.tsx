@@ -131,12 +131,12 @@ export default function Login() {
       <>
         <div className="w-full h-screen ">
           <WidthWrapper className=" h-screen flex justify-center ">
-            <Tabs defaultValue="user" className="w-[400px]  mx-auto pt-24 ">
+            <Tabs defaultValue="user" className="w-[400px]   mx-auto pt-24 ">
               <TabsList className="w-full h-12 bg-gray-50">
                 <TabsTrigger value="user">Patient Login</TabsTrigger>
                 <TabsTrigger value="doctor">Doctor Login</TabsTrigger>
               </TabsList>
-              <TabsContent value="user">
+              <TabsContent value="user" >
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(handleLogin)}
@@ -174,8 +174,18 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                    <Button className="w-full" type="submit">
-                      Submit
+                    <p className="text-gray-500"> 
+                      Do not have an account?
+                      <span className="text-blue-500">
+                        <Link href={"/register"}> register</Link>
+                      </span>{" "}
+                      here
+                    </p>
+                    <Button
+                      className="w-full  bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
+                      type="submit"
+                    >
+                      Login
                     </Button>
                   </form>
                 </Form>
@@ -218,8 +228,18 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                    <Button className="w-full" type="submit">
-                      Submit
+                     <p className="text-gray-500"> 
+                      Do not have an account as a doctor?
+                      <span className="text-blue-500">
+                        <Link href={"/applydoc"}> apply</Link>
+                      </span>{" "}
+                      here
+                    </p>
+                    <Button
+                      className="w-full  bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
+                      type="submit"
+                    >
+                      Login
                     </Button>
                   </form>
                 </Form>

@@ -32,14 +32,25 @@ export default function VideCall() {
         </WidthWrapper>
       </div>
     );
+  } else if (doctorToken && doctorToken.length > 0) {
+    return (
+      <div>
+        <WidthWrapper>
+          <PatientAppointments />
+        </WidthWrapper>
+      </div>
+    );
+  } else {
+    return (
+      <p className="text-gray-500 text-center my-52">
+        {" "}
+        Please login to check your upcoming appointments
+        <span className="text-blue-500">
+          <Link href={"/login"}> login</Link>
+        </span>
+      </p>
+    );
   }
-  return (
-    <div>
-      <WidthWrapper>
-        <PatientAppointments />
-      </WidthWrapper>
-    </div>
-  );
 }
 const UserAppointments = () => {
   const user = useSelector(selectUser);
@@ -69,46 +80,65 @@ const UserAppointments = () => {
   useEffect(() => {
     getUserAppointments();
   }, []);
+  console.log("token", token);
 
-  return (
-    <>
-      <div>
-        <p className="text-2xl tracking-widert text-gray-600 text-center my-6">
-          Welcome {user?.name} to your appointments
-        </p>
+  if (!token || !userAppointments || userAppointments.length === 0) {
+    return (
+      <p className="text-gray-500 text-center">
+        {" "}
+        Please login to check your upcoming appointments
+      </p>
+    );
+  } else {
+    return (
+      <>
         <div>
-          <Table>
-            <TableCaption>
-              {" "}
-              You have in total {userAppointments.length} upcoming appointments{" "}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Dr Name</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead className="text-right">Meeting</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="mt-6">
-              {userAppointments.map((ele: AppointmentInputProps, idx) => (
-                <TableRow key={idx}>
-                  <TableHead className="w-[100px]">{ele?.doctorInfo}</TableHead>
-                  <TableHead>{ele?.date}</TableHead>
-                  <TableHead>{ele?.time}</TableHead>
-                  <TableHead className="text-right">
-                    <Link href={`/videocall/${ele.roomId}`}>
-                      <Button>Join the meet</Button>
-                    </Link>
-                  </TableHead>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <p className="text-2xl tracking-widert text-gray-600 text-center my-6">
+            Welcome {user?.name} to your appointments
+          </p>
+          <div>
+            {userAppointments && (
+              <Table>
+                {userAppointments.length > 0 && (
+                  <TableCaption>
+                    {" "}
+                    You have in total {userAppointments.length} upcoming
+                    appointments{" "}
+                  </TableCaption>
+                )}
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Dr Name</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead className="text-right">Meeting</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="mt-6">
+                  {userAppointments.map((ele: AppointmentInputProps, idx) => (
+                    <TableRow key={idx}>
+                      <TableHead className="w-[100px]">
+                        {ele?.doctorInfo}
+                      </TableHead>
+                      <TableHead>{formatDate(ele?.date)}</TableHead>
+                      <TableHead>{ele?.time}</TableHead>
+                      <TableHead className="text-right">
+                        <Link href={`/videocall/${ele.roomId}`}>
+                          <Button className="bg-[#78355B] hover:bg-[#78355B] hover:opacity-95">
+                            Join the meet
+                          </Button>
+                        </Link>
+                      </TableHead>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  }
 };
 
 const PatientAppointments = () => {
@@ -181,3 +211,12 @@ const PatientAppointments = () => {
     </>
   );
 };
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+}

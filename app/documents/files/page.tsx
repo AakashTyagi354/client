@@ -9,6 +9,7 @@ import { CiFileOn } from "react-icons/ci";
 import { CiImageOn } from "react-icons/ci";
 import { LuMoveUpRight } from "react-icons/lu";
 import { FaRegTrashAlt } from "react-icons/fa";
+import Link from "next/link";
 export default function Files() {
   const user = useSelector(selectUser);
   const token = useSelector(selectToken);
@@ -53,9 +54,22 @@ export default function Files() {
     }
   };
 
-  useEffect(() => {
-    getAllDocuments();
-  }, [handleDeleteDocument]);
+  if (user === null) {
+    return (
+      <p className="text-gray-500 text-center my-24">
+        Pls{" "}
+        <Link href={"/login"} className="text-blue-500">
+          {" "}
+          login
+        </Link>{" "}
+        to see your documents
+      </p>
+    );
+  } else {
+    useEffect(() => {
+      getAllDocuments();
+    }, [handleDeleteDocument]);
+  }
 
   if (user?.isAdmin) {
     return (
