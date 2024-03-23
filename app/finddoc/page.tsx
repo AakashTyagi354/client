@@ -146,12 +146,13 @@ export default function Page() {
     doctorInfo: string
   ) => {
     try {
+      console.log("date now",date)
       // Convert date to ISO string format
       const isDate = date ? date.toISOString() : null;
       console.log("date", isDate);
       console.log("time", time);
       const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/booking-availbility",
+        "http://localhost:7003/api/v1/user/booking-availbility",
         {
           userId: currentUser?.id,
           doctorId: doctorId,
@@ -194,6 +195,7 @@ export default function Page() {
     doctorInfo: string
   ) => {
     try {
+      
       // Convert date to ISO string format
       const isDate = date ? date.toISOString() : null;
 
@@ -589,7 +591,7 @@ export default function Page() {
                         <div className="w-[35%]  ">
                           <div className="flex flex-col items-center  justify-center h-[50%]">
                             <DatePicker
-                              // defaultValue={dayjs(getTodaysDate(), dateFormat)}
+                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
                               maxDate={dayjs("2030-10-31", dateFormat)}
                               // @ts-ignore
