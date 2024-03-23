@@ -15,21 +15,7 @@ export default function Files() {
   const user = useSelector(selectUser);
   const token = useSelector(selectToken);
   const [documents, setDocuments] = useState([]);
-  if (user === null) {
-    return (
-      <>
-        <p className="text-gray-500 text-center my-24">
-          Pls{" "}
-          <Link href={"/login"} className="text-blue-500">
-            {" "}
-            login
-          </Link>{" "}
-          to see your documents
-        </p>
-        <DemoIds />
-      </>
-    );
-  }
+
 
   // const getAllDocuments = async () => {
   //   if (user === null) {
@@ -111,6 +97,22 @@ export default function Files() {
   
     fetchData();
   }, [user, token]);
+  
+  if (user === null) {
+    return (
+      <>
+        <p className="text-gray-500 text-center my-24">
+          Pls{" "}
+          <Link href={"/login"} className="text-blue-500">
+            {" "}
+            login
+          </Link>{" "}
+          to see your documents
+        </p>
+        <DemoIds />
+      </>
+    );
+  }
 
   if (user?.isAdmin) {
     return (
