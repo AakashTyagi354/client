@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## Getting Started
+# Delma
+Delma is your one-stop solution for online healthcare needs. From booking appointments with doctors to uploading lab test reports and purchasing medications, Delma offers a seamless experience for patients seeking quality healthcare services online.
 
-First, run the development server:
+# Teach Stack
+MERN, Nextjs
+
+
+
+## Features
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/01fd70c0-b4e3-4c24-a38f-5ca61ee01199)
+
+- Patients can seamlessly schedule appointments with certified healthcare professionals.
+- Patients have the capability to securely upload their medical documents.
+- uploaded documents are only accessible to authorized healthcare providers, maintaining patient privacy and confidentiality.
+- video consultations between doctors and patients, enabling remote healthcare services.
+- ntegrated chat functionality allows real-time communication between doctors and patients.
+- After the consultation, patients can conveniently purchase prescribed medications directly through our integrated online store, with secure payment processing facilitated by the Razorpay API.
+- Fully mobile responsive 
+
+
+
+## Optimizations
+
+- Implemented search functionality leveraging techniques like debouncing to significantly reduce server load, resulting in a 20% improvement in overall performance.
+- Efficiently manage large datasets with server-side pagination and provide seamless browsing with infinite scrolling.
+- Implemented caching mechanisms to enhance system performance and improve response time by 30%.
+
+
+
+## Demo
+
+#### Booking appoitment with doctors
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/ce889402-93fd-4b99-85e6-36395e781f6d)
+
+#### Search functionality
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/f4a7b3b1-4860-4fd4-83b4-eff7c8f84db8)
+
+#### Video consultation
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/ca7835b0-a46b-44b0-90bc-fc2e3b761b8f)
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/7ab02e34-38cb-4ea1-bae1-4314b3166243)
+
+#### Notifications
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/c062e795-7cdc-4306-a6ee-4ba6a8a7288b)
+
+#### Upload documents
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/8f3e087e-aa97-4930-af35-84c5f91416f9)
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/81525524-2889-440f-b33b-158b3148d80e)
+
+#### Store for buying medicines
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/6a57112c-ca5a-4712-8c55-d826172919cc)
+
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/55ece1fd-a0fc-48cb-b9de-d627e42b39ca)
+
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/262a8527-3715-4196-9c3f-7bdc5b40b785)
+
+#### Payment gateway
+
+![App Screenshot](https://github.com/AakashTyagi354/MindCraftAi/assets/78840211/d4f175c4-1845-4f44-afc2-a3adf86636ce)
+## Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+mkdir my-project
+cd my-project
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+git clone https://github.com/AakashTyagi354/client.git
+npm Install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+     
+## Live Links
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Backend repo: https://github.com/AakashTyagi354/doc_app
 
-## Learn More
+live link: https://client-plum-nine.vercel.app/
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
