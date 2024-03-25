@@ -8,7 +8,7 @@ export default function DemoIds() {
           <p className=" font-semibold text-xl">Demo Credentials</p>
           <div className="flex gap-2 mt-4 flex-col md:flex-row ">
             <p className="font-bold">User</p>
-            <p className="text-gray-600">email: user1@hmail.com</p>
+            <p className="text-gray-600">email: user1@gmail.com</p>
             <p className="text-gray-600">password:123456</p>
           </div>
           <div className="flex gap-2 flex-col md:flex-row">

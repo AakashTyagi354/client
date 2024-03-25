@@ -47,7 +47,7 @@ export default function Login() {
 
   const [check, setCheck] = useState(false);
   const [errors, setErrors] = useState({});
-
+  console.log(check)
   const handleLogin = async (values: z.infer<typeof formSchema>) => {
     try {
       // Validate input data
@@ -181,6 +181,13 @@ export default function Login() {
                         <Link href={"/register"}> register</Link>
                       </span>{" "}
                       here
+                    </p>
+                    <p className="flex items-center gap-2 text-gray-500">
+                      <Switch
+                        checked={check}
+                        onCheckedChange={() => setCheck(!check)}
+                      />{" "}
+                      are you a admin
                     </p>
                     <Button
                       className="w-full  bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
