@@ -44,7 +44,7 @@ export default function VideCall() {
   } else {
     return (
       <>
-        <p className="text-gray-500 text-center mt-52">
+        <p className="text-gray-500 text-center mt-56">
           {" "}
           Please login to check your upcoming appointments
           <span className="text-blue-500">
@@ -88,7 +88,7 @@ const UserAppointments = () => {
 
   if (!token || !userAppointments || userAppointments.length === 0) {
     return (
-      <p className="text-gray-500 text-center">
+      <p className="text-gray-500 text-center my-56">
         {" "}
         Please login to check your upcoming appointments
       </p>

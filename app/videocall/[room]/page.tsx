@@ -24,8 +24,8 @@ export default function Room() {
   }
   useEffect(() => {
     const myMeeting = async () => {
-      const appID = 1388895091;
-      const serverSecret = "483f2fc9e6bdd23801118d35330d5626";
+      const appID = 235937854;
+      const serverSecret = "a58ba79fee67e9e11bcae91b34dbd43e";
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appID,
         serverSecret,
