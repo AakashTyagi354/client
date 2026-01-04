@@ -47,17 +47,19 @@ export default function Login() {
 
   const [check, setCheck] = useState(false);
   const [errors, setErrors] = useState({});
-  console.log(check)
+  console.log(check);
   const handleLogin = async (values: z.infer<typeof formSchema>) => {
     try {
       // Validate input data
       console.log(values);
 
       // Choose the login URL based on check state
-      let URL = `https://doc-app-7im8.onrender.com/api/v1/user/login`;
+      let URL = `http://localhost:8089/auth/login`;
       if (check) {
-        URL = `https://doc-app-7im8.onrender.com/api/v1/user/admin-login`;
+        URL = `http://localhost:8089/auth/login`;
       }
+
+      console.log("Login URL:", URL);
 
       // Make API call
       const res = await axios.post(URL, values);
@@ -71,18 +73,22 @@ export default function Login() {
           description: res.data.message,
         });
       }
+      console.log("RESPONSE DATA:", res.data);
+      const apiData = res.data.data;
+
       const user = {
-        name: res.data.user.name,
-        email: res.data.user.email,
-        id: res.data.user._id,
-        isAdmin: res.data.user.isAdmin,
+        name: apiData.username,
+        email: values.email, // backend does not send email
+        id: String(apiData.userId),
+        isAdmin: apiData.isAdmin === "true",
       };
-      const token = res.data.token;
+      const token = apiData.jwtToken;
       dispatch(setUser({ user, token }));
       router.push("/finddoc");
     } catch (error: any) {
       // If validation fails, set errors state
 
+      setErrors("ERROR IN LOGIN|| {})");
       console.log("ERROR IN LOGIN", error);
     }
   };
