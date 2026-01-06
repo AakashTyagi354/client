@@ -24,6 +24,7 @@ import DemoIds from "@/components/DemoIds";
 export default function VideCall() {
   const userToken = useSelector(selectToken);
   const doctorToken = useSelector(selectDocToken);
+  console.log("userToken", userToken);
 
   if (userToken && userToken.length > 0) {
     return (
@@ -59,29 +60,38 @@ export default function VideCall() {
 const UserAppointments = () => {
   const user = useSelector(selectUser);
   const token = useSelector(selectToken);
-  const [userAppointments, setUserAppointments] = useState<
-    AppointmentInputProps[]
-  >([]);
+  const [userAppointments, setUserAppointments] = useState<AppointmentUI[]>([]);
 
   const getUserAppointments = async () => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/user-appointments",
-        {
-          userId: user?.id,
-        },
+      const res = await axios.get<AppointmentResponse[]>(
+        "http://localhost:8089/api/v1/appointments/user",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          params: {
+            userId: user?.id,
+          },
         }
       );
-      setUserAppointments(res.data.data);
+
+      const appointmentsUI: AppointmentUI[] = res.data.map((a) => ({
+        id: a.id,
+        doctorId: a.doctorId,
+        date: a.createdAt.split("T")[0],
+        time: a.createdAt.split("T")[1].substring(0, 5),
+        status: a.status,
+      }));
+
+      setUserAppointments(appointmentsUI);
+      console.log(appointmentsUI);
     } catch (err) {
       console.log("ERROR IN GETTING appointments", err);
     }
   };
   useEffect(() => {
+    console.log("FETCHING APPOINTMENTS", token);
     getUserAppointments();
   }, []);
   console.log("token", token);
@@ -119,15 +129,18 @@ const UserAppointments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="mt-6">
-                  {userAppointments.map((ele: AppointmentInputProps, idx) => (
-                    <TableRow key={idx}>
+                  {userAppointments.map((ele, idx) => (
+                    <TableRow key={ele.id}>
                       <TableHead className="w-[100px]">
-                        {ele?.doctorInfo}
+                        Doctor ID: {ele.doctorId}
                       </TableHead>
-                      <TableHead>{formatDate(ele?.date)}</TableHead>
-                      <TableHead>{ele?.time}</TableHead>
+
+                      <TableHead>{formatDate(ele.date)}</TableHead>
+
+                      <TableHead>{ele.time}</TableHead>
+
                       <TableHead className="text-right">
-                        <Link href={`/videocall/${ele.roomId}`}>
+                        <Link href={`/videocall/${ele.id}`}>
                           <Button className="bg-[#78355B] hover:bg-[#78355B] hover:opacity-95">
                             Join the meet
                           </Button>

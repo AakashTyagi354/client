@@ -1,16 +1,32 @@
+// interface DoctorInputProps {
+//   _id: string;
+//   firstName: string;
+//   lastName: string;
+//   languages: string[];
+//   phone: string;
+//   email: string;
+//   address: string;
+//   specialization: string;
+//   experience: number;
+//   feesPerCunsaltation: number;
+//   status: string;
+//   gender: string;
+// }
+
 interface DoctorInputProps {
-  _id: string;
+  id: number;                     // ✅ SQL ID
+  userId: string;                 // ✅ from backend
   firstName: string;
   lastName: string;
-  languages: string[];
   phone: string;
   email: string;
+  website?: string;               // optional
   address: string;
-  specialization: string;
+  specialization: string;         // enum as string
   experience: number;
-  feesPerCunsaltation: number;
-  status: string;
-  gender: string;
+  feesPerConsultation: number;    // ✅ fixed spelling
+  gender: "MALE" | "FEMALE";       // enum
+  status: "APPROVED" | "PENDING" | "REJECTED";
 }
 
 interface DocumentInputProps {
@@ -52,4 +68,20 @@ interface AppointmentInputProps {
   date: string;
   time: string;
   roomId: string;
+}
+ interface AppointmentResponse {
+  id: number;
+  userId: number;
+  doctorId: number;
+  slotId: number;
+  status: "BOOKED" | "CANCELLED" | "COMPLETED";
+  createdAt: string;
+}
+
+interface AppointmentUI {
+  id: number;
+  doctorId: number;
+  date: string;
+  time: string;
+  status: string;
 }

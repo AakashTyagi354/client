@@ -26,6 +26,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
 import DemoIds from "@/components/DemoIds";
+import axiosInstance from "./axiosInstance";
 // Define Zod schema for validation
 const formSchema = z.object({
   email: z.string().min(2).max(50),
@@ -48,6 +49,9 @@ export default function Login() {
   const [check, setCheck] = useState(false);
   const [errors, setErrors] = useState({});
   console.log(check);
+  
+ 
+
   const handleLogin = async (values: z.infer<typeof formSchema>) => {
     try {
       // Validate input data
@@ -62,7 +66,7 @@ export default function Login() {
       console.log("Login URL:", URL);
 
       // Make API call
-      const res = await axios.post(URL, values);
+      const res = await axiosInstance.post(URL, values);
       if (res.data.success === true) {
         toast({
           description: res.data.message,

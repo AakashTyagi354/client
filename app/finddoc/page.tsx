@@ -55,6 +55,7 @@ import helpImg from "../../public/images/helpimg.png";
 import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import axiosInstance from "../login/axiosInstance";
 
 const specializationData = [
   "Orthopedics",
@@ -67,7 +68,7 @@ const specializationData = [
   "Ophthalmology",
 ];
 interface DoctorsProps {
-  _id: string;
+  id: string;
   firstName: string;
   address: string;
   specialization: string;
@@ -125,24 +126,46 @@ export default function Page() {
     const fetchDoctors = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(
-          "https://doc-app-7im8.onrender.com/api/v1/user/get-doctors"
-        );
-
-        setDocs(response.data.doctors);
+        const response = await axiosInstance.get("/api/users/doctors");
+        setDocs(response.data);
+        console.log("DOCTORS DATA:", response.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchDoctors(); // Call the fetchDoctors function
+  
+    fetchDoctors();
   }, []);
+
+  // useEffect(() => {
+  //   const fetchDoctors = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const response = await axiosInstance.get(
+  //         "/api/users/doctors",{
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           }
+  //         }
+  //       );
+
+  //       setDocs(response.data);
+  //       console.log("DOCTORS DATA:", response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching doctors:", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   fetchDoctors(); // Call the fetchDoctors function
+  // }, []);
   const handleAvailabilityCheck = async (
     date: Date | null,
     time: string,
-    doctorId: string,
+    doctorId: number,
     doctorInfo: string
   ) => {
     try {
@@ -191,7 +214,7 @@ export default function Page() {
   const handleBookAppointment = async (
     date: Date | null,
     time: string,
-    doctorId: string,
+    doctorId: number,
     doctorInfo: string
   ) => {
     try {
@@ -199,21 +222,37 @@ export default function Page() {
       // Convert date to ISO string format
       const isDate = date ? date.toISOString() : null;
 
+      // const res = await axios.post(
+      //   "http://localhost:8089/api/v1/appointments/book",
+      //   {
+      //     userId: currentUser?.id,
+      //     doctorId: doctorId,
+      //     doctorInfo,
+      //     userInfo: currentUser?.name,
+      //     date: isDate,
+      //     time,
+      //     // status: "pending",
+      //     // roomId: generateUniqueString(),
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //     },
+          
+      //   }
+
+      // );
       const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/book-appointment",
-        {
-          userId: currentUser?.id,
-          doctorId: doctorId,
-          doctorInfo,
-          userInfo: currentUser?.name,
-          date: isDate,
-          time,
-          status: "pending",
-          roomId: generateUniqueString(),
-        },
+        `http://localhost:8089/api/v1/appointments/book`,
+        null, // No request body
         {
           headers: {
             Authorization: `Bearer ${token}`,
+          },
+          params: {
+            userId: currentUser?.id,
+            doctorId: doctorId,
+            slotId:"29",
           },
         }
       );
@@ -426,7 +465,7 @@ export default function Page() {
                               handleAvailabilityCheck(
                                 startDate,
                                 selectedTime,
-                                ele._id,
+                                ele.id,
                                 ele.firstName
                               )
                             }
@@ -438,7 +477,7 @@ export default function Page() {
                               handleBookAppointment(
                                 startDate,
                                 selectedTime,
-                                ele._id,
+                                ele.id,
                                 ele.firstName
                               )
                             }
@@ -566,14 +605,14 @@ export default function Page() {
                                 {ele.address}
                               </p>
                             </div>
-                            <p className="flex items-center gap-2 mt-4 ml-2">
+                            {/* <p className="flex items-center gap-2 mt-4 ml-2">
                               <IoLanguageOutline />
                               {ele.languages.map((e, i) => (
                                 <p className="text-gray-600 text-sm" key={i}>
                                   {e}
                                 </p>
                               ))}
-                            </p>
+                            </p> */}
                             <div className="flex items-center gap-2 mt-4 ml-2">
                               <PiFlaskThin />
                               <p className="text-gray-600 text-sm">
@@ -583,7 +622,7 @@ export default function Page() {
                             <div className="flex items-center gap-2 mt-4 ml-2">
                               <PiMoneyThin />
                               <p className="text-gray-600 text-sm">
-                                ₹ {ele.feesPerCunsaltation} per session
+                                ₹ {ele.feesPerConsultation} per session
                               </p>
                             </div>
                           </div>
@@ -615,7 +654,7 @@ export default function Page() {
                               handleAvailabilityCheck(
                                 startDate,
                                 selectedTime,
-                                ele._id,
+                                ele.id,
                                 ele.firstName
                               )
                             }
@@ -648,7 +687,7 @@ export default function Page() {
                                       handleBookAppointment(
                                         startDate,
                                         selectedTime,
-                                        ele._id,
+                                        ele.id,
                                         ele.firstName
                                       )
                                     }
