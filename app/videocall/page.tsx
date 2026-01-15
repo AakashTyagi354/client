@@ -20,13 +20,15 @@ import {
 } from "@/redux/doctorSlice";
 import Link from "next/link";
 import DemoIds from "@/components/DemoIds";
+import axiosInstance from "../login/axiosInstance";
 
 export default function VideCall() {
   const userToken = useSelector(selectToken);
   const doctorToken = useSelector(selectDocToken);
+  const user = useSelector(selectUser);
   console.log("userToken", userToken);
 
-  if (userToken && userToken.length > 0) {
+  if (userToken && userToken.length > 0 && !user?.isDoctor) {
     return (
       <div>
         <WidthWrapper>
@@ -34,7 +36,7 @@ export default function VideCall() {
         </WidthWrapper>
       </div>
     );
-  } else if (doctorToken && doctorToken.length > 0) {
+  } else if (user?.isDoctor) {
     return (
       <div>
         <WidthWrapper>
@@ -64,7 +66,7 @@ const UserAppointments = () => {
 
   const getUserAppointments = async () => {
     try {
-      const res = await axios.get<AppointmentResponse[]>(
+      const res = await axiosInstance.get<AppointmentResponse[]>(
         "http://localhost:8089/api/v1/appointments/user",
         {
           headers: {
@@ -160,25 +162,46 @@ const UserAppointments = () => {
 
 const PatientAppointments = () => {
   const doctor = useSelector(selectDoctor);
+  const user = useSelector(selectUser);
   const [doctorAppointments, setDoctorAppointments] = useState<
-    AppointmentInputProps[]
+    AppointmentUI[]
   >([]);
   const token = useSelector(selectDocToken);
 
   const getDoctorAppointments = async () => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/doctor/doctor-appointments",
-        {
-          doctorId: doctor?.id,
-        },
+      // const res = await axios.post(
+      //   "https://doc-app-7im8.onrender.com/api/v1/doctor/doctor-appointments",
+      //   {
+      //     doctorId: doctor?.id,
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+
+       const res = await axiosInstance.get<AppointmentResponse[]>(
+        "http://localhost:8089/api/v1/appointments/doctor",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          params: {
+            doctorId: user?.id,
+          },
         }
       );
-      setDoctorAppointments(res.data.data);
+
+        const appointmentsUI: AppointmentUI[] = res.data.map((a) => ({
+        id: a.id,
+        doctorId: a.userId,
+        date: a.createdAt.split("T")[0],
+        time: a.createdAt.split("T")[1].substring(0, 5),
+        status: a.status,
+      }));
+      setDoctorAppointments(appointmentsUI);
       console.log(res.data);
     } catch (err) {
       console.log("ERROR IN GETTING appointments", err);
@@ -209,13 +232,13 @@ const PatientAppointments = () => {
               </TableRow>
             </TableHeader>
             <TableBody className="mt-6">
-              {doctorAppointments.map((ele: AppointmentInputProps, idx) => (
+              {doctorAppointments.map((ele: AppointmentUI, idx) => (
                 <TableRow key={idx}>
-                  <TableHead className="w-[100px]">{ele.userInfo}</TableHead>
+                  <TableHead className="w-[100px]">{ele.doctorId}</TableHead>
                   <TableHead>{ele.date}</TableHead>
                   <TableHead>{ele.time}</TableHead>
                   <TableHead className="text-right">
-                    <Link href={`/videocall/${ele.roomId}`}>
+                    <Link href={`/videocall/${ele.id}`}>
                       <Button>Join the meet</Button>
                     </Link>
                   </TableHead>

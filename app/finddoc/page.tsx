@@ -56,6 +56,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import axiosInstance from "../login/axiosInstance";
+import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 
 const specializationData = [
   "Orthopedics",
@@ -118,6 +120,17 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(new Date()); // State for date
   const [selectedTime, setSelectedTime] = useState("12:00");
+
+  // state valiables for check avl btn dialogue
+  const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [selectedSlotId, selectSelectedSlotId] = useState<number | null>(null);
+  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String } | null>(null);
+
+
+
+  //
+
   const onChange = (time: any) => {
     setSelectedTime(time);
   };
@@ -135,7 +148,7 @@ export default function Page() {
         setIsLoading(false);
       }
     };
-  
+
     fetchDoctors();
   }, []);
 
@@ -162,65 +175,97 @@ export default function Page() {
 
   //   fetchDoctors(); // Call the fetchDoctors function
   // }, []);
-  const handleAvailabilityCheck = async (
-    date: Date | null,
-    time: string,
-    doctorId: number,
-    doctorInfo: string
-  ) => {
-    try {
-      console.log("date now",date)
-      // Convert date to ISO string format
-      const isDate = date ? date.toISOString() : null;
-      console.log("date", isDate);
-      console.log("time", time);
-      const res = await axios.post(
-        "http://localhost:7003/api/v1/user/booking-availbility",
-        {
-          userId: currentUser?.id,
-          doctorId: doctorId,
-          doctorInfo,
-          userInfo: currentUser?.name,
-          date: isDate,
-          time,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const str = res.data.message;
-      console.log(str);
-      if (res.data.success === false) {
-        toast({
-          variant: "destructive",
-          title: "Status of your availability check",
-          description: str,
-        });
-      } else {
-        toast({
-          title: "Status of your availability check",
-          description: str,
-        });
-      }
 
-      console.log("RESPONSE OF CHECK FUNCTION", res);
+
+  const handleAvailabilityCheck = async (doctorId: number, firstName: String) => {
+    setIsLoading(true);
+    try {
+      const dateStr = startDate ? dayjs(startDate).format("YYYY-MM-DD") : getTodaysDate();
+      const res = await axiosInstance.get(`http://localhost:8089/api/v1/appointments/slots`, {
+        params: {
+          doctorId,
+          date: dateStr
+        }
+      });
+      const slots = res.data;
+      console.log("Available slots:", slots);
+      setAvailableSlots(slots);
+      setActiveDoctor({ id: doctorId, name: firstName });
+      setIsSlotModalOpen(true);
+
     } catch (err) {
       console.log("ERROR IN availability CHECK", err);
+      toast({ variant: "destructive", title: "Error", description: "Could not fetch slots." });
+
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+
+
+  // const handleAvailabilityCheck = async (
+  //   date: Date | null,
+  //   time: string,
+  //   doctorId: number,
+  //   doctorInfo: string
+  // ) => {
+  //   try {
+  //     console.log("date now",date)
+  //     // Convert date to ISO string format
+  //     const isDate = date ? date.toISOString() : null;
+  //     console.log("date", isDate);
+  //     console.log("time", time);
+  //     const res = await axios.post(
+  //       "http://localhost:7003/api/v1/user/booking-availbility",
+  //       {
+  //         userId: currentUser?.id,
+  //         doctorId: doctorId,
+  //         doctorInfo,
+  //         userInfo: currentUser?.name,
+  //         date: isDate,
+  //         time,
+  //       },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     const str = res.data.message;
+  //     console.log(str);
+  //     if (res.data.success === false) {
+  //       toast({
+  //         variant: "destructive",
+  //         title: "Status of your availability check",
+  //         description: str,
+  //       });
+  //     } else {
+  //       toast({
+  //         title: "Status of your availability check",
+  //         description: str,
+  //       });
+  //     }
+
+  //     console.log("RESPONSE OF CHECK FUNCTION", res);
+  //   } catch (err) {
+  //     console.log("ERROR IN availability CHECK", err);
+  //   }
+  // };
 
   const handleBookAppointment = async (
-    date: Date | null,
-    time: string,
-    doctorId: number,
-    doctorInfo: string
+    // date: Date | null,
+    // time: string,
+    // doctorId: number,
+    // doctorInfo: string
   ) => {
+    if (!selectedSlotId || !activeDoctor) {
+      toast({ variant: "destructive", title: "Select a slot", description: "Please pick a time slot first." });
+      return;
+    }
     try {
-      
+
       // Convert date to ISO string format
-      const isDate = date ? date.toISOString() : null;
+      // const isDate = date ? date.toISOString() : null;
 
       // const res = await axios.post(
       //   "http://localhost:8089/api/v1/appointments/book",
@@ -238,7 +283,7 @@ export default function Page() {
       //     headers: {
       //       Authorization: `Bearer ${token}`,
       //     },
-          
+
       //   }
 
       // );
@@ -251,8 +296,8 @@ export default function Page() {
           },
           params: {
             userId: currentUser?.id,
-            doctorId: doctorId,
-            slotId:"29",
+            doctorId: activeDoctor.id,
+            slotId: selectedSlotId,
           },
         }
       );
@@ -271,8 +316,11 @@ export default function Page() {
 
       // alert(res.data.message);
       console.log("RESPONSE OF booking appoitment FUNCTION", res);
+      setIsSlotModalOpen(false);
+
     } catch (err) {
       console.log("ERROR IN booking appointment CHECK", err);
+      toast({ variant: "destructive", title: "Error", description: "Connection error." });
     }
   };
 
@@ -314,12 +362,13 @@ export default function Page() {
       if (searchQuery.trim() !== "") {
         try {
           const fetchSearchResults = async () => {
-            const response = await axios.get(
-              `https://doc-app-7im8.onrender.com/api/v1/doctor/search-doctors/${searchQuery}`
+            const response = await axiosInstance.get(
+              `http://localhost:8089/api/v1/doctor/search/${searchQuery}`
             );
             setSearchResults(response.data.data);
             console.log("first", response.data.data);
           };
+          
           fetchSearchResults();
         } catch (error) {
           console.error("Error fetching search results:", error);
@@ -403,238 +452,50 @@ export default function Page() {
   if (!hydration) return;
 
   return (
-    <div>
-      <WidthWrapper>
-        <div className="w-full h-[400px] bg-[#78355b] relative">
-          <Image
-            src={homeImg}
-            layout="fill"
-            objectFit="cover"
-            objectPosition="center"
-            alt=""
-          />
-          <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
-            {/* Place your items here */}
-            <h1 className="text-white text-xl md:text-4xl font-bold text-center ">
-              Dedicated to Your Wellbeing, Every Step of the Way.
-            </h1>
-            <div className="flex w-full items-center justify-center mt-4">
-              <div className="border p-2 flex gap-2 w-[50%] relative search-container">
-                <CiSearch size={20} className="cursor-pointer text-white" />
-                <input
-                  type="text"
-                  placeholder="Search for medicines, health products and much more"
-                  className="bg-inherit outline-none focus:outline-none w-full text-sm text-white"
-                  onClick={handleInputClick} // Toggle suggestions on input click
-                  onChange={handleSearchInputChange} // Debounced input change handler
-                />
-                {view && (
-                  <div className="w-full z-40 flex flex-col  max-h-[300px] py-4  overflow-y-scroll bg-white opacity-95 absolute top-[37px] left-0">
-                    {searchResults.map((ele: DoctorInputProps, idx) => (
-                      <div
-                        key={idx}
-                        className="hover:bg-gray-100 py-3  cursor-pointer flex items-center gap-8"
-                      >
-                        <p className="text-gray-600 text-sm font-semibold ml-4">
-                          Dr.{ele.firstName} {ele.lastName}
-                        </p>
+    <>
 
-                        <div>
-                          <DatePicker
-                            defaultValue={dayjs(getTodaysDate(), dateFormat)}
-                            minDate={dayjs(getTodaysDate(), dateFormat)}
-                            maxDate={dayjs("2030-10-31", dateFormat)}
-                            onChange={(date: any) => setStartDate(date)}
-                            className="w-full"
-                            format={dateFormat}
-                          />
-
-                          <TimePicker
-                            defaultValue={dayjs(getCurrentTime(), timeFormat)}
-                            format={timeFormat}
-                            className="w-full"
-                            onChange={onChange}
-                            value={dayjs(selectedTime, timeFormat)}
-                          />
-                        </div>
-                        <div>
-                          <Button
-                            className="w-full mx-auto  text-[12px] "
-                            variant={"outline"}
-                            onClick={() =>
-                              handleAvailabilityCheck(
-                                startDate,
-                                selectedTime,
-                                ele.id,
-                                ele.firstName
-                              )
-                            }
-                          >
-                            check availability
-                          </Button>
-                          <Button
-                            onClick={() =>
-                              handleBookAppointment(
-                                startDate,
-                                selectedTime,
-                                ele.id,
-                                ele.firstName
-                              )
-                            }
-                            className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
-                          >
-                            {" "}
-                            Book{" "}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {searchResults.length === 0 && (
-                      <p className="w-full text-center text-sm text-gray-500">
-                        No results found
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </WidthWrapper>
-      <WidthWrapper className="">
-        <div className="bg-gray-50 w-full flex">
-          <div className="flex-grow">
-            <div className="flex w-[300px] gap-4 overflow-hidden md:w-full  justify-center items-center mt-12">
-              <Filter />
-              <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
-              <div className="flex flex-col md:flex-row md:w-[60%] md:ml-4 gap-2">
-                <select
-                  className="w-[130px]  focus:outline-none outline-none text-sm text-gray-600 rounded-md"
-                  onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  defaultValue=""
-                >
-                  <option value="" disabled selected hidden>
-                    Specializations
-                  </option>
-                  {specializationData.map((item, idx) => (
-                    <option key={idx} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Gender Select */}
-                <select
-                  className="w-[100px] rounded-md  focus:outline-none outline-none  text-sm text-gray-600"
-                  onChange={(e) => setSelectedGender(e.target.value)}
-                >
-                  <option value="" disabled selected hidden>
-                    Gender
-                  </option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-
-                {/* Sort By Select */}
-                <select
-                  className="w-[160px] focus:outline-none outline-none  text-sm text-gray-600"
-                  onChange={(e) => setSelectedSortBy(e.target.value)}
-                >
-                  <option value="" disabled selected hidden>
-                    Sort by
-                  </option>
-                  <option value="experience-low-high">
-                    Experience low - high
-                  </option>
-                  <option value="experience-high-low">
-                    Experience high - low
-                  </option>
-                </select>
-                <Button onClick={handleFilter} className="bg-[#78355b]">Apply Filter</Button>
-              </div>
-            </div>
-            <div className="">
-              {isLoading ? (
-                <Loader2 className="animate-spin mx-auto " size={24} />
-              ) : (
-                <>
-                  <div className="flex mt-10 md:ml-12 mb-6">
-                    <p className="font-semibold">
-                      Search Results (
-                      {memoizedDocs.length > 0 ? memoizedDocs.length : 0}){" "}
-                    </p>
-                  </div>
-                  <div className="flex flex-col  items-center  ">
-                    {currentPosts.length == 0 && (
-                      <p className="text-sm my-12 text-gray-500">
-                        No Results Found
-                      </p>
-                    )}
-                    {currentPosts.map((ele: DoctorInputProps, idx) => (
-                      <div
-                        key={idx}
-                        className=" w-[380px]  h-[260] md:w-[500px] mx-auto  md:h-[260px]  shadow-sm mt-4 flex "
-                      >
-                        <div className="bg-[#F1F6F7] h-full hidden md:w-[25%] md:flex justify-center items-center">
-                          <Image
-                            src={img3}
-                            alt=""
-                            height={100}
-                            width={100}
-                            className="rounded-full shadow-sm"
-                          />
-                        </div>
-                        <div className="w-[40%] flex flex-col ">
-                          <p className="font-semibold ml-4  mt-4">
-                            {" "}
-                            Dr.{ele.firstName}
+      <div>
+        <WidthWrapper>
+          <div className="w-full h-[400px] bg-[#78355b] relative">
+            <Image
+              src={homeImg}
+              layout="fill"
+              objectFit="cover"
+              objectPosition="center"
+              alt=""
+            />
+            <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
+              {/* Place your items here */}
+              <h1 className="text-white text-xl md:text-4xl font-bold text-center ">
+                Dedicated to Your Wellbeing, Every Step of the Way.
+              </h1>
+              <div className="flex w-full items-center justify-center mt-4">
+                <div className="border p-2 flex gap-2 w-[50%] relative search-container">
+                  <CiSearch size={20} className="cursor-pointer text-white" />
+                  <input
+                    type="text"
+                    placeholder="Search for medicines, health products and much more"
+                    className="bg-inherit outline-none focus:outline-none w-full text-sm text-white"
+                    onClick={handleInputClick} // Toggle suggestions on input click
+                    onChange={handleSearchInputChange} // Debounced input change handler
+                  />
+                  {view && (
+                    <div className="w-full z-40 flex flex-col  max-h-[300px] py-4  overflow-y-scroll bg-white opacity-95 absolute top-[37px] left-0">
+                      {searchResults.map((ele: DoctorInputProps, idx) => (
+                        <div
+                          key={idx}
+                          className="hover:bg-gray-100 py-3  cursor-pointer flex items-center gap-8"
+                        >
+                          <p className="text-gray-600 text-sm font-semibold ml-4">
+                            Dr.{ele.firstName} {ele.lastName}
                           </p>
-                          <div className="flex gap-4  border-b border-gray-200 w-[85%] mx-auto">
-                            <p className="text-[#007291] text-sm  mb-4">
-                              {ele.specialization}
-                            </p>
-                            <p className="text-[#007291] text-sm  mb-4">
-                              {ele.gender}
-                            </p>
-                          </div>
+
                           <div>
-                            <div className="flex items-center gap-2 mt-4 ml-2 ">
-                              <CiLocationOn />
-                              <p className="text-gray-600 text-sm">
-                                {ele.address}
-                              </p>
-                            </div>
-                            {/* <p className="flex items-center gap-2 mt-4 ml-2">
-                              <IoLanguageOutline />
-                              {ele.languages.map((e, i) => (
-                                <p className="text-gray-600 text-sm" key={i}>
-                                  {e}
-                                </p>
-                              ))}
-                            </p> */}
-                            <div className="flex items-center gap-2 mt-4 ml-2">
-                              <PiFlaskThin />
-                              <p className="text-gray-600 text-sm">
-                                {ele.experience} years experience
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 mt-4 ml-2">
-                              <PiMoneyThin />
-                              <p className="text-gray-600 text-sm">
-                                ₹ {ele.feesPerConsultation} per session
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-[35%]  ">
-                          <div className="flex flex-col items-center  justify-center h-[50%]">
                             <DatePicker
                               defaultValue={dayjs(getTodaysDate(), dateFormat)}
                               minDate={dayjs(getTodaysDate(), dateFormat)}
                               maxDate={dayjs("2030-10-31", dateFormat)}
-                              // @ts-ignore
-                              onChange={(date) => setStartDate(date)}
+                              onChange={(date: any) => setStartDate(date)}
                               className="w-full"
                               format={dateFormat}
                             />
@@ -647,140 +508,291 @@ export default function Page() {
                               value={dayjs(selectedTime, timeFormat)}
                             />
                           </div>
-                          <Button
-                            className="w-full mx-auto  text-[12px] "
-                            variant={"outline"}
+                          <div>
+                            <Button
+                              className="w-full mx-auto  text-[12px] "
+                              variant={"outline"}
+                              onClick={() =>
+                                handleAvailabilityCheck(
+                                  ele.id,
+                                  ele.firstName
+                                )
+                              }
+                            >
+                              check availability
+                            </Button>
+                            {/* <Button
                             onClick={() =>
-                              handleAvailabilityCheck(
+                              handleBookAppointment(
                                 startDate,
                                 selectedTime,
                                 ele.id,
                                 ele.firstName
                               )
                             }
+                            className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
                           >
-                            check availability
+                            {" "}
+                            Book{" "}
+                          </Button> */}
+
+
+
+                          </div>
+                        </div>
+                      ))}
+
+                      {searchResults.length === 0 && (
+                        <p className="w-full text-center text-sm text-gray-500">
+                          No results found
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </WidthWrapper>
+
+        <WidthWrapper className="">
+          <div className="bg-gray-50 w-full flex">
+            <div className="flex-grow">
+              <div className="flex w-[300px] gap-4 overflow-hidden md:w-full  justify-center items-center mt-12">
+                <Filter />
+                <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
+                <div className="flex flex-col md:flex-row md:w-[60%] md:ml-4 gap-2">
+                  <select
+                    className="w-[130px]  focus:outline-none outline-none text-sm text-gray-600 rounded-md"
+                    onChange={(e) => setSelectedSpecialization(e.target.value)}
+                    defaultValue=""
+                  >
+                    <option value="" disabled selected hidden>
+                      Specializations
+                    </option>
+                    {specializationData.map((item, idx) => (
+                      <option key={idx} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Gender Select */}
+                  <select
+                    className="w-[100px] rounded-md  focus:outline-none outline-none  text-sm text-gray-600"
+                    onChange={(e) => setSelectedGender(e.target.value)}
+                  >
+                    <option value="" disabled selected hidden>
+                      Gender
+                    </option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+
+                  {/* Sort By Select */}
+                  <select
+                    className="w-[160px] focus:outline-none outline-none  text-sm text-gray-600"
+                    onChange={(e) => setSelectedSortBy(e.target.value)}
+                  >
+                    <option value="" disabled selected hidden>
+                      Sort by
+                    </option>
+                    <option value="experience-low-high">
+                      Experience low - high
+                    </option>
+                    <option value="experience-high-low">
+                      Experience high - low
+                    </option>
+                  </select>
+                  <Button onClick={handleFilter} className="bg-[#78355b]">Apply Filter</Button>
+                </div>
+              </div>
+              <div className="">
+                {isLoading ? (
+                  <Loader2 className="animate-spin mx-auto " size={24} />
+                ) : (
+                  <>
+                    {currentPosts.map((ele: DoctorInputProps, idx) => (
+                      <div key={idx} className="w-[380px] h-[260px] md:w-[500px] mx-auto shadow-sm mt-4 flex">
+                        {/* Left Side: Image */}
+                        <div className="bg-[#F1F6F7] h-full hidden md:w-[25%] md:flex justify-center items-center">
+                          <Image src={img3} alt="" height={100} width={100} className="rounded-full shadow-sm" />
+                        </div>
+
+                        {/* Middle: Doctor Info */}
+                        <div className="w-[40%] flex flex-col ">
+                          <p className="font-semibold ml-4 mt-4">Dr.{ele.firstName}</p>
+                          <div className="flex gap-4 border-b border-gray-200 w-[85%] mx-auto">
+                            <p className="text-[#007291] text-sm mb-4">{ele.specialization}</p>
+                            <p className="text-[#007291] text-sm mb-4">{ele.gender}</p>
+                          </div>
+                          <div className="flex flex-col gap-2 mt-2 ml-2">
+                            <div className="flex items-center gap-2"><CiLocationOn /><p className="text-gray-600 text-sm">{ele.address}</p></div>
+                            <div className="flex items-center gap-2"><PiFlaskThin /><p className="text-gray-600 text-sm">{ele.experience} yrs</p></div>
+                            <div className="flex items-center gap-2"><PiMoneyThin /><p className="text-gray-600 text-sm">₹ {ele.feesPerConsultation}</p></div>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Actions */}
+                        <div className="w-[35%] p-2 flex flex-col justify-center gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-400">SELECT DATE</label>
+                            <DatePicker
+                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
+                              minDate={dayjs(getTodaysDate(), dateFormat)}
+                              onChange={(date: any) => setStartDate(date)}
+                              className="w-full"
+                              format={dateFormat}
+                            />
+                          </div>
+
+                          {/* THIS IS THE ONLY BUTTON YOU NEED HERE */}
+                          <Button
+                            className="w-full bg-[#78355b] text-white hover:bg-[#5e2947]"
+                            onClick={() => handleAvailabilityCheck(ele.id, ele.firstName)}
+                          >
+                            Check Availability
                           </Button>
 
-                          <AlertDialog>
-                            <AlertDialogTrigger className="w-full">
-                              <Button className="w-full mx-auto    text-[12px]  bg-[#78355b] hover:bg-[#78355B] hover:opacity-95">
-                                Book Appoitment
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Are you sure you want to book the appoitment?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete your account and remove
-                                  your data from our servers.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction>
-                                  <Button
-                                    onClick={() =>
-                                      handleBookAppointment(
-                                        startDate,
-                                        selectedTime,
-                                        ele.id,
-                                        ele.firstName
-                                      )
-                                    }
-                                    className="w-full"
-                                  >
-                                    {" "}
-                                    Book{" "}
-                                  </Button>
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <p className="text-[10px] text-center text-gray-400 italic">
+                            View real-time slots to book
+                          </p>
                         </div>
+                      </div>
+
+                    ))}
+                    <div className="mt-12 mb-12">
+                      <PaginationSection
+                        totalPosts={memoizedDocs.length}
+                        postsPerPage={postsPerPage}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                      />
+                    </div>
+                    {/* ADD THIS DIALOG BLOCK HERE */}
+
+
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="w-[500px]  hidden lg:block">
+              <div className="w-[300px]  border border-gray-300 mt-12  ">
+                <div className="mt-12">
+                  <Image
+                    src={helpImg}
+                    alt=""
+                    width={230}
+                    height={300}
+                    className="mx-auto"
+                  />
+
+                  <div className="bg-[#F1F6F7] w-[90%] mx-auto rounded-sm max-h-[400px] overflow-scroll mt-6">
+                    <p className=" font-semibold text-gray-600 text-center mt-6">
+                      About Delma Application
+                    </p>
+                    <p className="text-sm tracking-wider text-gray-500 p-6 ">
+                      The renowned team are recognized stalwarts of their fields
+                      and have many years of experience amongst them. The team
+                      specializes in a multitude of disciplines dealing with
+                      injuries, congenital or acquired disorders, overuse
+                      conditions of the bones and joints, and conditions
+                      associated with soft tissues, which include the ligaments,
+                      nerves, and muscles. The surgical team at Apollo Hospitals
+                      delivers the best treatments made possible with the team of
+                      physical therapists, sports medicine therapists, pediatric
+                      orthopedic surgeons, arthroscopy surgeons, spine surgeons,
+                      knee specialists, hip-replacement specialists, patient
+                      counselors, and nurses. When you visit Apollo Hospitals for
+                      any orthopedic concern, you will be greeted by a
+                      professional team backed by the latest in modern medical
+                      techniques and technology. The team will work with you every
+                      step of your treatment and recovery journey.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold mt-6 text-gray-500 text-center">
+                    Frequently Asked Questions
+                  </p>
+                  <div className="w-[80%] mx-auto mt-6 flex flex-col gap-4 mb-12">
+                    {question.map((ele, idx) => (
+                      <div className="flex flex-col " key={idx}>
+                        <div className="flex">
+                          <p className="text-[#007291] text-[14px] mt-2">
+                            {ele.title}
+                          </p>
+                          <div
+                            onClick={() => handleFNQ(idx)}
+                            className="cursor-pointer"
+                          >
+                            -
+                          </div>
+                        </div>
+                        {ele.show && (
+                          <p className="text-gray-400 text-[12px]">{ele.desc}</p>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <div className="mt-12 mb-12">
-                    <PaginationSection
-                      totalPosts={memoizedDocs.length}
-                      postsPerPage={postsPerPage}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                    />
-                  </div>
-                </>
+                </div>
+              </div>
+            </div>
+          </div>
+        </WidthWrapper>
+       
+
+
+      </div>
+       <Dialog open={isSlotModalOpen} onOpenChange={setIsSlotModalOpen}>
+          <DialogContent className="fixed left-1/2 top-1/2 z-[100] grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white p-6 shadow-lg duration-200 rounded-lg">
+            <DialogHeader>
+              <DialogTitle className="text-[#78355b] text-xl font-bold">
+                Available Time Slots
+              </DialogTitle>
+              <p className="text-sm text-gray-500">
+                Booking with **Dr. {activeDoctor?.name}** for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
+              </p>
+            </DialogHeader>
+
+            {/* The Scrollable Slot Grid */}
+            <div className="grid grid-cols-3 gap-3 my-6 max-h-[300px] overflow-y-auto p-1">
+              {availableSlots.length > 0 ? (
+                availableSlots.map((slot) => (
+                  <button
+                    key={slot.id}
+                    onClick={() => selectSelectedSlotId(slot.id.toString())}
+                    className={`py-2 px-1 text-xs font-bold rounded-md border transition-all ${selectedSlotId === slot.id.toString()
+                      ? "bg-[#78355b] text-white border-[#78355b] shadow-md"
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-[#78355b]"
+                      }`}
+                  >
+                    {slot.startTime.substring(0, 5)}
+                  </button>
+                ))
+              ) : (
+                <p className="col-span-3 text-center py-6 text-gray-400 italic">
+                  No available slots for this date.
+                </p>
               )}
             </div>
-          </div>
-          <div className="w-[500px]  hidden lg:block">
-            <div className="w-[300px]  border border-gray-300 mt-12  ">
-              <div className="mt-12">
-                <Image
-                  src={helpImg}
-                  alt=""
-                  width={230}
-                  height={300}
-                  className="mx-auto"
-                />
 
-                <div className="bg-[#F1F6F7] w-[90%] mx-auto rounded-sm max-h-[400px] overflow-scroll mt-6">
-                  <p className=" font-semibold text-gray-600 text-center mt-6">
-                    About Delma Application
-                  </p>
-                  <p className="text-sm tracking-wider text-gray-500 p-6 ">
-                    The renowned team are recognized stalwarts of their fields
-                    and have many years of experience amongst them. The team
-                    specializes in a multitude of disciplines dealing with
-                    injuries, congenital or acquired disorders, overuse
-                    conditions of the bones and joints, and conditions
-                    associated with soft tissues, which include the ligaments,
-                    nerves, and muscles. The surgical team at Apollo Hospitals
-                    delivers the best treatments made possible with the team of
-                    physical therapists, sports medicine therapists, pediatric
-                    orthopedic surgeons, arthroscopy surgeons, spine surgeons,
-                    knee specialists, hip-replacement specialists, patient
-                    counselors, and nurses. When you visit Apollo Hospitals for
-                    any orthopedic concern, you will be greeted by a
-                    professional team backed by the latest in modern medical
-                    techniques and technology. The team will work with you every
-                    step of your treatment and recovery journey.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="font-bold mt-6 text-gray-500 text-center">
-                  Frequently Asked Questions
-                </p>
-                <div className="w-[80%] mx-auto mt-6 flex flex-col gap-4 mb-12">
-                  {question.map((ele, idx) => (
-                    <div className="flex flex-col " key={idx}>
-                      <div className="flex">
-                        <p className="text-[#007291] text-[14px] mt-2">
-                          {ele.title}
-                        </p>
-                        <div
-                          onClick={() => handleFNQ(idx)}
-                          className="cursor-pointer"
-                        >
-                          -
-                        </div>
-                      </div>
-                      {ele.show && (
-                        <p className="text-gray-400 text-[12px]">{ele.desc}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="flex gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsSlotModalOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBookAppointment}
+                disabled={!selectedSlotId}
+                className="flex-1 bg-[#78355b] text-white hover:bg-[#5e2947]"
+              >
+                Confirm & Book
+              </Button>
             </div>
-          </div>
-        </div>
-      </WidthWrapper>
-    </div>
+          </DialogContent>
+        </Dialog>
+    </>
   );
 }
 
@@ -891,7 +903,7 @@ function getTodaysDate() {
   const month = String(currentDate.getMonth() + 1).padStart(2, "0");
   const day = String(currentDate.getDate()).padStart(2, "0");
   const formattedDate = `${year}-${month}-${day}`;
-  console.log(formattedDate)
+
   return formattedDate;
 }
 

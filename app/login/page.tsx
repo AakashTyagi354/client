@@ -49,8 +49,8 @@ export default function Login() {
   const [check, setCheck] = useState(false);
   const [errors, setErrors] = useState({});
   console.log(check);
-  
- 
+
+
 
   const handleLogin = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -68,27 +68,45 @@ export default function Login() {
       // Make API call
       const res = await axiosInstance.post(URL, values);
       if (res.data.success === true) {
+
         toast({
           description: res.data.message,
         });
+
+        const roleString = res.data.data.role;
+        const rolesArray = roleString.replace(/[\[\]]/g, "").split(", ");
+        const isDoctor = rolesArray.includes("DOCTOR");
+
+        
+          // Not a doctor, proceed as user
+          console.log("RESPONSE USER DATA:", res.data);
+          const apiData = res.data.data;
+          const user = {
+            name: apiData.username,
+            email: values.email, // backend does not send email
+            id: String(apiData.userId),
+            isAdmin: apiData.isAdmin === "true",
+            isDoctor: isDoctor
+
+          };
+          const token = apiData.jwtToken;
+          dispatch(setUser({ user, token }));
+          console.log("DISPATCHED USER DATA:", user, token);
+          router.push("/finddoc");
+        
+
+
+        
       } else {
         toast({
           variant: "destructive",
           description: res.data.message,
         });
       }
-      console.log("RESPONSE DATA:", res.data);
-      const apiData = res.data.data;
 
-      const user = {
-        name: apiData.username,
-        email: values.email, // backend does not send email
-        id: String(apiData.userId),
-        isAdmin: apiData.isAdmin === "true",
-      };
-      const token = apiData.jwtToken;
-      dispatch(setUser({ user, token }));
-      router.push("/finddoc");
+
+
+
     } catch (error: any) {
       // If validation fails, set errors state
 

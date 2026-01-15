@@ -44,51 +44,50 @@ export default function UploadForm() {
   const metadata = {
     contentType: file?.type || "application/octet-stream", // Use the type property of the File object, or fallback to a default value
   };
-  const handleFileUpload = (file: File) => {
-    const storageRef = ref(storage, "file-upload/" + file?.name);
-    // const uploadTask = uploadBytesResumable(storageRef, file, file?.type);
+  // const handleFileUpload = (file: File) => {
+  //   const storageRef = ref(storage, "file-upload/" + file?.name);
+  //   // const uploadTask = uploadBytesResumable(storageRef, file, file?.type);
 
-    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+  //   const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
-    uploadTask.on("state_changed", (snapshot) => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      console.log("Upload is " + progress + "% done");
-      setProgress(progress);
+  //   uploadTask.on("state_changed", (snapshot) => {
+  //     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+  //     console.log("Upload is " + progress + "% done");
+  //     setProgress(progress);
 
-      if (progress === 100) {
-        getDownloadURL(uploadTask.snapshot.ref)
-          .then((downloadURL) => {
-            console.log("File available at", downloadURL);
-            console.log(downloadURL);
-            handleUploadDocuments(downloadURL); // Call handleUploadDocuments after setting the url
-            toast({
-              variant: "default",
-              description: "Document Uploaded successfully",
-            });
-            setFile(null);
-          })
-          .catch((error) => {
-            console.error("Error getting download URL:", error);
-          });
-      }
-    });
-  };
+  //     if (progress === 100) {
+  //       getDownloadURL(uploadTask.snapshot.ref)
+  //         .then((downloadURL) => {
+  //           console.log("File available at", downloadURL);
+  //           console.log(downloadURL);
+  //           handleUploadDocuments(downloadURL); // Call handleUploadDocuments after setting the url
+  //           toast({
+  //             variant: "default",
+  //             description: "Document Uploaded successfully",
+  //           });
+  //           setFile(null);
+  //         })
+  //         .catch((error) => {
+  //           console.error("Error getting download URL:", error);
+  //         });
+  //     }
+  //   });
+  // };
 
-  const handleUploadDocuments = async (url: string) => {
+  const handleUploadDocuments = async (file: File) => {
     if (!file) {
       console.error("No file selected");
       return;
     }
+
+    const formatData = new FormData();
+    formatData.append("file",file);
+    formatData.append("userId", user?.id);
+
     try {
       const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/documents/create-document",
-        {
-          userId: user?.id,
-          name: file.name,
-          url: url,
-          type: file.type,
-          size: file.size,
-        },
+        "http://localhost:8089/api/v1/documents/upload",
+        formatData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -96,6 +95,11 @@ export default function UploadForm() {
         }
       );
       console.log(res.data);
+        toast({
+              variant: "default",
+              description: "Document Uploaded successfully",
+            });
+            setFile(null);
     } catch (err) {
       console.log("ERROR IN UPLOADING Documents", err);
     }
@@ -143,7 +147,7 @@ export default function UploadForm() {
       {file && <FilePrevies file={file} removeFile={() => setFile(null)} />}
       <button
         disabled={!file}
-        onClick={() => file && handleFileUpload(file)}
+        onClick={() => file && handleUploadDocuments(file)}
         className="p-2 w-[30%] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-full mt-5 bg-gray-200"
       >
         Upload

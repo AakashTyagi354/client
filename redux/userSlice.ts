@@ -11,6 +11,7 @@ interface User {
   email: string;
   id: string;
   isAdmin: boolean;
+  isDoctor: boolean;
 
   // Add any other user properties here
 }

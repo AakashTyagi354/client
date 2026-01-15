@@ -1,53 +1,51 @@
+// app/videocall/[room]/page.tsx
 "use client";
-import { useEffect, useRef } from "react";
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+import React, { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { selectUser } from "@/redux/userSlice";
-import { selectDoctor } from "@/redux/doctorSlice";
+import { selectUser, selectToken } from "@/redux/userSlice";
+import axios from "axios";
 
-export default function Room() {
-  const elementRef = useRef(null);
+const ZegoMeeting = dynamic(() => import('../ZegoMeeting'), { ssr: false });
+
+export default function RoomPage() {
   const params = useParams();
   const roomID = params.room as string;
   const user = useSelector(selectUser);
-  const doctor = useSelector(selectDoctor);
+  const token = useSelector(selectToken);
+  const [zegoToken, setZegoToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  let name = "";
-  let id = "";
-  if (user !== null && user !== undefined) {
-    name = user?.name ?? "";
-    id = user?.id ?? "";
-  } else if (doctor !== null && doctor !== undefined) {
-    name = doctor?.name ?? "";
-    id = doctor?.id ?? "";
-  }
-  useEffect(() => {
-    const myMeeting = async () => {
-      const appID = 235937854;
-      const serverSecret = "a58ba79fee67e9e11bcae91b34dbd43e";
-      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-        appID,
-        serverSecret,
-        roomID,
-        id,
-        name
+  // Use useCallback to ensure the function is stable
+  const fetchToken = useCallback(async () => {
+    console.log("🚀 STEP 2: startMeeting function is now RUNNING");
+    try {
+      const response = await axios.get(
+        `http://localhost:8089/api/v1/appointments/video-token/${roomID}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      const zp = ZegoUIKitPrebuilt.create(kitToken);
-      zp.joinRoom({
-        container: elementRef.current,
-        scenario: {
-          mode: ZegoUIKitPrebuilt.VideoConference,
-        },
-      });
-    };
+      console.log("✅ STEP 3: Token received from Backend:", response.data.token);
+      setZegoToken(response.data.token);
+    } catch (err: any) {
+      console.error("❌ STEP 3 ERROR: API Call Failed", err);
+      setError(err.response?.data?.message || "Failed to get video token");
+    }
+  }, [roomID, token]);
 
-    myMeeting();
-  }, [roomID]);
+  useEffect(() => {
+    console.log("🔍 STEP 1: useEffect checking variables...", { userExists: !!user, roomID, tokenExists: !!token });
+    
+    // Use the values directly from Redux/Params
+    if (user && token && roomID) {
+      fetchToken();
+    } else {
+      console.log("⚠️ STEP 1 WAIT: One of these is missing:", { user: !!user, token: !!token, roomID: !!roomID });
+    }
+  }, [user, token, roomID, fetchToken]);
 
-  return (
-    <div>
-      <div ref={elementRef} />
-    </div>
-  );
+  if (error) return <div className="p-20 text-red-500">Error: {error}</div>;
+  if (!zegoToken) return <div className="p-20">Authenticating... Check console for Step 1/2/3</div>;
+
+  return <ZegoMeeting zegoToken={zegoToken} />;
 }

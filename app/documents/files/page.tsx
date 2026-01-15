@@ -11,6 +11,7 @@ import { LuMoveUpRight } from "react-icons/lu";
 import { FaRegTrashAlt } from "react-icons/fa";
 import Link from "next/link";
 import DemoIds from "@/components/DemoIds";
+import axiosInstance from "@/app/login/axiosInstance";
 export default function Files() {
   const user = useSelector(selectUser);
   const token = useSelector(selectToken);
@@ -53,13 +54,11 @@ export default function Files() {
   //   }
   // };
 
-  const handleDeleteDocument = async (documentId: string) => {
+  const handleDeleteDocument = async (documentId: number) => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/documents/delete-document",
-        {
-          documentId,
-        },
+      const res = await axiosInstance.delete(
+        `http://localhost:8089/api/v1/documents/delete-document/${documentId}`,
+        
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -76,11 +75,9 @@ export default function Files() {
     const fetchData = async () => {
       if (user !== null) {
         try {
-          const res = await axios.post(
-            "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document",
-            {
-              userId: user.id,
-            },
+          const res = await axiosInstance.get(
+            `http://localhost:8089/api/v1/documents/getall-documents/${user.id}`,
+            
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -88,7 +85,7 @@ export default function Files() {
             }
           );
           console.log(res.data.documents);
-          setDocuments(res.data.documents);
+          setDocuments(res.data);
         } catch (err) {
           console.log("ERROR IN UPLOADING Documents", err);
         }
@@ -161,7 +158,7 @@ export default function Files() {
                   </a>
                   <FaRegTrashAlt
                     className="text-red-600 cursor-pointer"
-                    onClick={() => handleDeleteDocument(item._id)}
+                    onClick={() => handleDeleteDocument(item.id)}
                   />
                 </div>
               </div>

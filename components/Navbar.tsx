@@ -79,15 +79,31 @@ const adminLinks = [
 
 export default function Navbar() {
   const token = useSelector(selectToken);
-  const docToken = useSelector(selectDocToken);
+
 
   const currentUser = useSelector(selectUser);
+  const doctorToken = currentUser?.isDoctor;
   const [notifications, setNotifications] = useState([]);
   const dispatch = useDispatch();
-  const handleLogout = () => {
-    dispatch(clearUser());
+
+  const handleLogout = async () => {
+    try{
+      const res = await axios.post("http://localhost:8089/auth/logout",{},{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true
+      });
+      console.log("LOGOUT done!!",res?.data)
+        dispatch(clearUser());
     dispatch(clearDoctor());
+
+    }catch(err){
+        console.log("ERROR IN LOGOUT", err);
+    }
+  
   };
+
   const handleNotificationDelete = async (idx: number) => {
     try {
       const res = await axios.post(
@@ -158,7 +174,7 @@ export default function Navbar() {
         </div>
         <div className="hidden  md:flex flex-grow w-full justify-between ">
           <div className="flex">
-            {!docToken ? (
+            {!doctorToken ? (
               <>
                 {navlinks.map((ele, idx) => (
                   <Link href={ele.href} key={idx}>
@@ -232,7 +248,7 @@ export default function Navbar() {
             </DropdownMenu>
 
             <Link href={"/login"} className="ml-4">
-              {token || docToken ? (
+              {token || doctorToken ? (
                 <Button variant={"ghost"} onClick={handleLogout} className="flex gap-2">
                   <FaRegShareSquare size={20}/>
                   Logout
@@ -254,7 +270,7 @@ export default function Navbar() {
               <SheetHeader>
                 <SheetDescription className=" min-h-[400px] mt-12">
                   <div className="flex flex-col items-start gap-4">
-                    {!docToken ? (
+                    {!doctorToken ? (
                       <>
                         {navlinks.map((ele, idx) => (
                           <Link
@@ -298,7 +314,7 @@ export default function Navbar() {
 
                   <div className="mt-12">
                     <Link href={"/login"} className="text-red-600">
-                      {token || docToken ? (
+                      {token || doctorToken ? (
                         <Button variant={"ghost"} onClick={handleLogout}>
                           Logout
                         </Button>

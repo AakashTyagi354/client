@@ -12,6 +12,7 @@ import { LuMoveUpRight } from "react-icons/lu";
 import { FaRegTrashAlt } from "react-icons/fa";
 
 import { CiFileOn, CiImageOn } from "react-icons/ci";
+import axiosInstance from "@/app/login/axiosInstance";
 
 export default function UserDoc() {
   const doctor = useSelector(selectDoctor);
@@ -22,11 +23,9 @@ export default function UserDoc() {
 
   const getAllDocuments = async () => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/documents/getall-document-users",
-        {
-          userId: params.userdoc,
-        },
+      const res = await axiosInstance.get(
+        `http://localhost:8089/api/v1/documents/getall-documents/${params.userdoc}`,
+        
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -34,9 +33,9 @@ export default function UserDoc() {
         }
       );
       console.log(res.data);
-      setDocuments(res.data.documents);
+      setDocuments(res.data);
     } catch (err) {
-      console.log("ERROR IN UPLOADING Documents", err);
+      console.log("ERROR IN Getting all Documents", err);
     }
   };
   useEffect(() => {
