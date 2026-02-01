@@ -54,9 +54,17 @@ const navlinks = [
     link: "Medicines",
     href: "/medicines",
   },
+  {
+    link:" Apply as Doctor",
+    href:"/applydoc"
+  }
   
 ];
 const doctorLinks = [
+  {
+    link:"Create slots",
+    href:"/doctor/slots"
+  },
   {
     link: "User Documents",
     href: "/docdoc",
@@ -68,7 +76,7 @@ const doctorLinks = [
   {
     link: "Medicines",
     href: "/medicines",
-  },
+  }
 ];
 const adminLinks = [
   {

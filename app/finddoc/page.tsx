@@ -111,10 +111,12 @@ export default function Page() {
   };
 
   const token = useSelector(selectToken);
+  const user = useSelector(selectUser);
   const currentUser = useSelector(selectUser);
   const { toast } = useToast();
 
   const [docs, setDocs] = useState<DoctorInputProps[]>([]);
+
   const memoizedDocs = useMemo(() => docs, [docs]);
   // const docs = useMemo(() => docs, [docs]);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +127,7 @@ export default function Page() {
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [selectedSlotId, selectSelectedSlotId] = useState<number | null>(null);
-  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String } | null>(null);
+  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String, fees:number } | null>(null);
 
 
 
@@ -177,7 +179,7 @@ export default function Page() {
   // }, []);
 
 
-  const handleAvailabilityCheck = async (doctorId: number, firstName: String) => {
+  const handleAvailabilityCheck = async (doctorId: number, firstName: String,singleDoctor: DoctorInputProps) => {
     setIsLoading(true);
     try {
       const dateStr = startDate ? dayjs(startDate).format("YYYY-MM-DD") : getTodaysDate();
@@ -190,8 +192,9 @@ export default function Page() {
       const slots = res.data;
       console.log("Available slots:", slots);
       setAvailableSlots(slots);
-      setActiveDoctor({ id: doctorId, name: firstName });
+      setActiveDoctor({ id: doctorId, name: firstName, fees: singleDoctor.feesPerConsultation });
       setIsSlotModalOpen(true);
+
 
     } catch (err) {
       console.log("ERROR IN availability CHECK", err);
@@ -251,6 +254,81 @@ export default function Page() {
   //     console.log("ERROR IN availability CHECK", err);
   //   }
   // };
+
+   const loadRazorpayScript = async () => {
+    try {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    } catch (err) {
+      console.log("Failed to load razorpay script: ", err);
+    }
+  };
+
+  const makePayment = async () => {
+      try {
+
+      // 1. Call your new Payment Microservice (via Gateway)
+      // Replace URL with your actual API Gateway or Payment MS URL
+      const { data } = await axiosInstance.post(
+        "http://localhost:8089/api/v1/payments/create",
+        {
+             amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,
+     refId: `SLOT_${selectedSlotId}`,
+        sourceType: "APPOINTMENT"
+        }
+
+
+      );
+
+      // 2. Ensure script is loaded before opening modal
+      await loadRazorpayScript(); 
+
+      const options = {
+        key: "rzp_test_S9jVkGSiveLNXR", // Move this to .env.local
+      amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,// Razorpay expects subunits (paise)
+        currency: "INR",
+        name: "Delma Health",
+        description: "Doctor Appointment Booking",
+        order_id: data.rzpOrderId, // The ID returned by your Java service
+        handler: async function (response: any) {
+          // 3. SUCCESS CALLBACK: Send to your MS for verification
+          try {
+            const verifyRes = await axiosInstance.post(
+              "http://localhost:8089/api/v1/payments/verify",
+              {
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }
+            );
+
+            if (verifyRes.status === 200) {
+              toast({ description: "Payment Successful! Appointment Booked." });
+              // router.push("/bookings/success");
+              await handleBookAppointment();
+            }
+          } catch (err) {
+            toast({ variant: "destructive", description: "Verification Failed!" });
+          }
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+
+        },
+        theme: { color: "#121212" },
+      };
+
+      const razor = new window.Razorpay(options);
+      razor.open();
+
+    } catch (error) {
+      console.error("Payment Initiation Error:", error);
+      toast({ variant: "destructive", description: "Could not initiate payment." });
+    }
+  }
 
   const handleBookAppointment = async (
     // date: Date | null,
@@ -515,7 +593,8 @@ export default function Page() {
                               onClick={() =>
                                 handleAvailabilityCheck(
                                   ele.id,
-                                  ele.firstName
+                                  ele.firstName,
+                                  ele
                                 )
                               }
                             >
@@ -650,7 +729,7 @@ export default function Page() {
                           {/* THIS IS THE ONLY BUTTON YOU NEED HERE */}
                           <Button
                             className="w-full bg-[#78355b] text-white hover:bg-[#5e2947]"
-                            onClick={() => handleAvailabilityCheck(ele.id, ele.firstName)}
+                            onClick={() => handleAvailabilityCheck(ele.id, ele.firstName,ele)}
                           >
                             Check Availability
                           </Button>
@@ -783,7 +862,7 @@ export default function Page() {
                 Cancel
               </Button>
               <Button
-                onClick={handleBookAppointment}
+                onClick={makePayment}
                 disabled={!selectedSlotId}
                 className="flex-1 bg-[#78355b] text-white hover:bg-[#5e2947]"
               >

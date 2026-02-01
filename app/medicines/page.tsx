@@ -9,13 +9,15 @@ import { MouseEventHandler, useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { MdOutlineAddShoppingCart } from "react-icons/md";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
 import { RiLoader2Line } from "react-icons/ri";
 import { useInView } from "react-intersection-observer";
 import debounce from "lodash/debounce";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import axiosInstance from "../login/axiosInstance";
+import { selectToken } from "@/redux/userSlice";
 const categories = [
   {
     title: "Diabetes",
@@ -55,17 +57,18 @@ export default function Medicines() {
   const { ref, inView } = useInView();
   const [noMoreProducts, setNoMoreProducts] = useState(false); // New state variable
   const dispatch = useDispatch();
+    const token = useSelector(selectToken);
 
   const handleCart = (item: ProductInputProps) => {
     dispatch(
       addToCart({
-        productId: item._id,
+        productId: item.id,
         quantity: item.quantity,
         description: item.description,
         price: item.price,
         name: item.name,
-        category: item.category,
-        photo: item.photo,
+        category: item.categoryId,
+        photo: item.imageURL,
       })
     );
   };
@@ -76,13 +79,18 @@ export default function Medicines() {
 
     try {
       await delay(1000);
-      const res = await axios.get(
-        `https://doc-app-7im8.onrender.com/api/v1/product/product-list/${pageNumber}`
+      const res = await axiosInstance.get(
+        `http://localhost:8089/api/v1/product`,{
+          headers: {
+            Authorization: `Bearer ${token}`,
+        
+          },
+        }
       );
-      const newProducts = res.data.products;
+      const newProducts = res.data.content;
       console.log(newProducts, pageNumber, "new producs");
       if (newProducts.length > 0) {
-        setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+        setProducts(newProducts);
         setPageNumber((prev) => prev + 1);
         console.log("PAGE", pageNumber);
       } else {
@@ -135,20 +143,22 @@ export default function Medicines() {
           <p className="text-gray-500">Trending Products</p>
           <div className="w-[50%] mx-auto  md:w-full  flex flex-wrap gap-12 mt-6">
             {products.map((ele: ProductInputProps, idx) => (
-              <Link href={`/medicines/${ele._id}`} key={idx}>
+              <Link href={`/medicines/${ele.id}`} key={idx}>
                 <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
                   <Image
-                    src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele._id}`}
+                    src={products.imageURL}
                     alt=""
                     height={100}
                     width={100}
                     className="h-[200px] w-[75%] mx-auto object-contain"
                   />
                   <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
-                    {textFormater(ele.name, 40)}
+                    {/* {textFormater(ele.name, 40)} */}
+                    {ele.name}
                   </p>
                   <p className="text-[11px] m-4 text-gray-400">
-                    {textFormater(ele.description, 60)}
+                    {/* {textFormater(ele.description, 60)} */}
+                    {ele.description}
                   </p>
                   <div className="flex items-center gap-2 ml-4">
                     <p className="text-[12px] text-gray-500 ">

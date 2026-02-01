@@ -1,26 +1,36 @@
 "use client";
 
+import axiosInstance from "@/app/login/axiosInstance";
 import WidthWrapper from "@/components/WidthWrapper";
 import { Button } from "@/components/ui/button";
 import { addToCart } from "@/redux/cartSlice";
+import { selectToken } from "@/redux/userSlice";
 import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import { MouseEventHandler, useEffect, useState } from "react";
 import { MdOutlineAddShoppingCart } from "react-icons/md";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Page() {
   const [products, setProducts] = useState<ProductInputProps[]>([]);
   const dispatch = useDispatch();
+   const token = useSelector(selectToken);
 
   const getProducts = async () => {
     try {
-      const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/product/get-product"
+      const res = await axiosInstance.get(
+        "http://localhost:8089/api/v1/product",{
+           
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
-      setProducts(res.data.products);
+      setProducts(res.data.content);
+      console.log(res.data.content)
     } catch (err) {
       console.log("ERROR IN FETCHING PRODUCTS", err);
     }
@@ -46,13 +56,13 @@ export default function Page() {
   const handleCart = (product: ProductInputProps) => {
     dispatch(
       addToCart({
-        productId: product._id,
-        quantity: product.quantity,
+        productId: product.id,
+        quantity: 1,
         description: product.description,
         price: product.price,
         name: product.name,
-        category: product.category,
-        photo: product.photo,
+        category: product.categoryId,
+        photo: product.imageURL,
       })
     );
   };
@@ -65,20 +75,20 @@ export default function Page() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-12">
           {products.map((ele: ProductInputProps, idx) => (
-            <Link href={`/medicines/${ele._id}`} key={idx}>
+            <Link href={`/medicines/${ele.id}`} key={idx}>
               <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
                 <Image
-                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele._id}`}
+                  src={ele.imageURL}
                   alt=""
                   height={100}
                   width={100}
                   className="h-[200px] w-[75%] mx-auto object-contain"
                 />
                 <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
-                  {textFormater(ele.name, 40)}
+                  {ele.name}
                 </p>
                 <p className="text-[11px] m-4 text-gray-400">
-                  {textFormater(ele.description, 60)}
+                  {ele.description}
                 </p>
                 <div className="flex items-center gap-2 ml-4">
                   <p className="text-[12px] text-gray-500 ">

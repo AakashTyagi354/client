@@ -1,5 +1,10 @@
 "use client";
-
+// Add this at the top of your file to fix TypeScript "window.Razorpay" errors
+// declare global {
+//   interface Window {
+//     Razorpay: any;
+//   }
+// }
 import WidthWrapper from "@/components/WidthWrapper";
 import {
   decrementQuantity,
@@ -20,6 +25,7 @@ import axios from "axios";
 import { selectUser } from "@/redux/userSlice";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import axiosInstance from "@/app/login/axiosInstance";
 declare global {
   interface Window {
     Razorpay: any; // or specify the type of Razorpay object if known
@@ -53,49 +59,122 @@ export default function CartPage() {
     }
   };
 
+
   const checkoutHandler = async (amount: number) => {
-    if (user === null) {
-      toast({
-        variant: "destructive",
-        description: "pls login to buy from delma",
-      });
+    if (!user) {
+      toast({ variant: "destructive", description: "Please login to book." });
       router.push("/login");
-    } else {
-      const {
-        data: { order },
-      } = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",
+      return;
+    }
+
+    try {
+
+      // 1. Call your new Payment Microservice (via Gateway)
+      // Replace URL with your actual API Gateway or Payment MS URL
+      const { data } = await axiosInstance.post(
+        "http://localhost:8089/api/v1/payments/create",
         {
-          amount,
+          amount: amount,
+          refId: "APP_102", // This would ideally be a dynamic Appointment ID
+          sourceType: "APPOINTMENT"
         }
+
+
       );
+
+      // 2. Ensure script is loaded before opening modal
       await loadRazorpayScript();
+
       const options = {
-        key: "rzp_test_fb6ALoOgdu9yem",
-        amount: order.amount,
+        key: "rzp_test_S9jVkGSiveLNXR", // Move this to .env.local
+        amount: amount * 100, // Razorpay expects subunits (paise)
         currency: "INR",
-        name: "Delma",
-        description: "Doctor appointment",
-        image: "https://avatars.githubusercontent.com/u/78840211?v=4",
-        order_id: order.id,
-        callback_url:
-          "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
+        name: "Delma Health",
+        description: "Doctor Appointment Booking",
+        order_id: data.rzpOrderId, // The ID returned by your Java service
+        handler: async function (response: any) {
+          // 3. SUCCESS CALLBACK: Send to your MS for verification
+          try {
+            const verifyRes = await axiosInstance.post(
+              "http://localhost:8089/api/v1/payments/verify",
+              {
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }
+            );
+
+            if (verifyRes.status === 200) {
+              toast({ description: "Payment Successful! Appointment Booked." });
+              router.push("/bookings/success");
+            }
+          } catch (err) {
+            toast({ variant: "destructive", description: "Verification Failed!" });
+          }
+        },
         prefill: {
-          name: "Gaurav Kumar",
-          email: "gaurav.kumar@example.com",
-          contact: "9000090000",
+          name: user.name,
+          email: user.email,
+
         },
-        notes: {
-          address: "Razorpay Corporate Office",
-        },
-        theme: {
-          color: "#121212",
-        },
+        theme: { color: "#121212" },
       };
+
       const razor = new window.Razorpay(options);
       razor.open();
+
+    } catch (error) {
+      console.error("Payment Initiation Error:", error);
+      toast({ variant: "destructive", description: "Could not initiate payment." });
     }
   };
+
+  // const checkoutHandler = async (amount: number) => {
+  //   if (user === null) {
+  //     toast({
+  //       variant: "destructive",
+  //       description: "pls login to buy from delma",
+  //     });
+  //     router.push("/login");
+  //   } else {
+  //     const {
+  //       data: { order },
+  //     } = await axiosInstance.post(
+  //       "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",{},{
+  //         params:{
+  //           amount: amount,
+  //           refId: "APP_102"
+  //         }
+  //       }
+
+  //     );
+  //     await loadRazorpayScript();
+  //     const options = {
+  //       key: "rzp_test_S9jVkGSiveLNXR",
+  //       amount: order.amount,
+  //       currency: "INR",
+  //       name: "Delma",
+  //       description: "Doctor appointment",
+  //       image: "https://avatars.githubusercontent.com/u/78840211?v=4",
+  //       order_id: order.id,
+  //       callback_url:
+  //         "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
+  //       prefill: {
+  //         name: "Gaurav Kumar",
+  //         email: "gaurav.kumar@example.com",
+  //         contact: "9000090000",
+  //       },
+  //       notes: {
+  //         address: "Razorpay Corporate Office",
+  //       },
+  //       theme: {
+  //         color: "#121212",
+  //       },
+  //     };
+  //     const razor = new window.Razorpay(options);
+  //     razor.open();
+  //   }
+  // };
 
   return (
     <div>
@@ -110,19 +189,21 @@ export default function CartPage() {
                 key={idx}
                 className="h-[380]  lg:h-[280px] flex flex-col lg:flex-row items-center w-[85%] border-b border-dotted border-gray-300   "
               >
-                <Image
-                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${ele.productId}`}
+                {/* <Image
+                  src={ele.photo}
                   alt=""
                   height={100}
                   width={100}
                   className="h-[160px] w-[75%] mx-auto object-contain"
-                />
+                /> */}
                 <div className="flex flex-col">
                   <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
-                    {textFormater(ele.name, 100)}
+                    {/* {textFormater(ele.name, 100)} */}
+                    {ele.name}
                   </p>
                   <p className="text-[11px] m-4 text-gray-400">
-                    {textFormater(ele.description, 150)}
+                    {/* {textFormater(ele.description, 150)} */}
+                    {ele.description}
                   </p>
                   <div className="flex items-center gap-2 ml-4">
                     <p className="text-[12px] text-gray-500 ">

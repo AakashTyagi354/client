@@ -25,7 +25,7 @@ export default function Dashboard() {
   const handleUsers = async () => {
     try {
       const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllUser",
+        "http://localhost:8089/api/v1/admin/getall-users",
         {
           headers: {
             Authorization: `Bearer ${token}`,

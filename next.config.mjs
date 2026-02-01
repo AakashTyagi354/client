@@ -3,16 +3,10 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        hostname: "localhost",
-      },
-      {
-        hostname: "firebasestorage.googleapis.com",
-      },
-      {
-        hostname: "randomuser.me",
-      },
-      {
-        hostname: "doc-app-7im8.onrender.com",
+        protocol: 'https',
+        hostname: 'delma-ecom-product-images.s3.amazonaws.com',
+        port: '',
+        pathname: '/**', // This allows all images from this bucket
       },
     ],
   },

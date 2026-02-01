@@ -14,25 +14,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import axiosInstance from "@/app/login/axiosInstance";
+import { selectToken } from "@/redux/userSlice";
+import { useSelector } from "react-redux";
 
 export default function SigleProduct() {
   // const [product, setProduct] = useState({});
+  const token = useSelector(selectToken);
   const [product, setProduct] = useState({
-    _id: "",
+    id: "",
     price: "",
     name: "",
     description: "",
-    category: { _id: "" },
+    categoryId: "",
+    imageURL:""
   });
   const params = useParams();
 
   const getSingleProduct = async () => {
     try {
-      const res = await axios.get(
-        `https://doc-app-7im8.onrender.com/api/v1/product/get-product/${params.singleproduct}`
+      const res = await axiosInstance.get(
+        `http://localhost:8089/api/v1/product/get-single-product/${params.singleproduct}`,{
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
-      setProduct(res.data.data);
+      setProduct(res.data);
     } catch (err) {
       console.log("Error in getSingleProduct", err);
     }
@@ -64,7 +74,7 @@ export default function SigleProduct() {
             <div className="w-full mt-12 flex flex-col ">
               <div className="w-full flex items-center justify-center">
                 <Image
-                  src={`https://doc-app-7im8.onrender.com/api/v1/product/product-photo/${product._id}`}
+                  src={product.imageURL}
                   alt=""
                   height={100}
                   width={100}

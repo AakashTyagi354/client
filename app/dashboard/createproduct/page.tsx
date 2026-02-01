@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSelector } from "react-redux";
 import { selectToken } from "@/redux/userSlice";
 import { toast } from "@/components/ui/use-toast";
+import axiosInstance from "@/app/login/axiosInstance";
 
 export default function Page() {
   const [categories, setCategories] = useState([]);
@@ -34,30 +35,8 @@ export default function Page() {
   console.log(position);
   const getCategories = async () => {
     try {
-      const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/category/get-category"
-      );
-
-      setCategories(res.data.category);
-    } catch (err) {
-      console.log("Error creating category", err);
-    }
-  };
-  useEffect(() => {
-    getCategories();
-  }, []);
-  const handleCreateProduct = async () => {
-    console.log("reached");
-    try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/product/create-product",
-        {
-          name,
-          description,
-          price,
-          category: position,
-          quantity,
-        },
+      const res = await axiosInstance.get(
+        "http://localhost:8089/api/v1/category/all",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -65,11 +44,39 @@ export default function Page() {
         }
       );
 
-      console.log(res.data);
+      setCategories(res.data);
     } catch (err) {
-      console.log("Error creating product", err);
+      console.log("Error creating category", err);
     }
   };
+
+  useEffect(() => {
+    getCategories();
+  }, []);
+  // const handleCreateProduct = async () => {
+  //   console.log("reached");
+  //   try {
+  //     const res = await axios.post(
+  //       "https://doc-app-7im8.onrender.com/api/v1/product/create-product",
+  //       {
+  //         name,
+  //         description,
+  //         price,
+  //         category: position,
+  //         quantity,
+  //       },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     console.log(res.data);
+  //   } catch (err) {
+  //     console.log("Error creating product", err);
+  //   }
+  // };
 
   //create product function
   const handleCreate = async () => {
@@ -79,24 +86,30 @@ export default function Page() {
       productData.append("description", description);
       productData.append("price", price);
       productData.append("quantity", quantity);
+
+      const selectedCategory = categories.find((cat:any) => cat.id === Number(position));
+      const categorySlug = selectedCategory?.slug || "";
+
+     productData.append("categorySlug", categorySlug);// Matches @RequestParam("categorySlug")
       if (photo !== null) {
         productData.append("photo", photo);
       }
       productData.append("category", position);
-      console.log(productData);
-      const { data } = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/product/create-product",
+      console.log(selectedCategory);
+      const { data } = await axiosInstance.post(
+        "http://localhost:8089/api/v1/product/create",
         productData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      if (data.success === true) {
+      if (data) {
         toast({
-          description: data.message,
+          description: "Product create successfully",
         });
       } else {
         toast({
@@ -133,8 +146,8 @@ export default function Page() {
                   value={position}
                   onValueChange={setPosition}
                 >
-                  {categories.map((ele: { name: string; _id: string }, idx) => (
-                    <DropdownMenuRadioItem value={ele._id} key={idx}>
+                  {categories.map((ele: { name: string; id: string }, idx) => (
+                    <DropdownMenuRadioItem value={ele.id} key={idx}>
                       {ele.name}
                     </DropdownMenuRadioItem>
                   ))}

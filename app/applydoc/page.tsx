@@ -5,8 +5,15 @@ import { Input } from "@/components/ui/input";
 import axios from "axios";
 import Link from "next/link";
 import React, { useState } from "react";
+import axiosInstance from "../login/axiosInstance";
+import { clearUser, selectToken, selectUser } from "@/redux/userSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { clearDoctor } from "@/redux/doctorSlice";
+import { toast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function ApplyDoc() {
+  const user = useSelector(selectUser);
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -16,8 +23,27 @@ export default function ApplyDoc() {
   const [specialization, setSpecialization] = useState("");
   const [experience, setExperience] = useState("");
   const [feesPerCunsaltation, setFeesPerCunsaltation] = useState("");
-
+const router = useRouter();
   const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+  const token = useSelector(selectToken);
+  const handleLogout = async () => {
+    try {
+      const res = await axios.post("http://localhost:8089/auth/logout", {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true
+      });
+      console.log("LOGOUT done!!", res?.data)
+      dispatch(clearUser());
+      dispatch(clearDoctor());
+
+    } catch (err) {
+      console.log("ERROR IN LOGOUT", err);
+    }
+
+  };
   const handleRegister = async () => {
     try {
       const languagesArray = languages.split(",").map((lang) => lang.trim());
@@ -25,22 +51,37 @@ export default function ApplyDoc() {
       const feesPerConsultationNumber = parseFloat(feesPerCunsaltation);
       const phonenumber = parseFloat(phone);
 
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/apply-doctor",
+      const res = await axiosInstance.post(
+        "http://localhost:8089/api/v1/doctor/apply",
         {
-          firstName:firstname,
-          lastName:lastname,
+          firstName: firstname,
+          lastName: lastname,
           phone: phonenumber,
           experience: experienceNumber,
-          feesPerCunsaltation: feesPerConsultationNumber,
-          languages: languagesArray,
+          feesPerConsultation: feesPerConsultationNumber,
+          // languages: languagesArray,
           email,
           password,
           address,
           specialization,
+        },
+        {
+          params: {
+            userId: user?.id
+          }
         }
       );
-      
+
+      toast({
+        description: res.data,
+      });
+
+      await handleLogout();
+
+      router.push("/login");
+
+
+
       console.log(res.data);
     } catch (err) {
       console.log("Error IN DOC REGISTER", err);

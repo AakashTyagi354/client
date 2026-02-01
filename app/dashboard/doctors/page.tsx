@@ -16,23 +16,35 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import axiosInstance from "@/app/login/axiosInstance";
 
 export default function Page() {
   const token = useSelector(selectToken);
 
   const [doctors, setDoctors] = useState<DoctorInputProps[]>([]);
+  const [pendingDoctors, setPendingDoctors] = useState<DoctorInputProps[]>([]);
   const handleDoctors = async () => {
     try {
-      const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllDoctors",
+      const res = await axiosInstance.get(
+        "http://localhost:8089/api/users/doctors",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      if (Array.isArray(res.data.data)) {
-        setDoctors(res.data.data);
+      const pendingDocResponse = await axiosInstance.get(
+        "http://localhost:8089/api/v1/doctor/pending-doctors",{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
+      )
+
+      setPendingDoctors(pendingDocResponse.data);
+
+      if (Array.isArray(res.data)) {
+        setDoctors(res.data);
       } else {
         console.error("Data received from API is not an array:", res.data.data);
       }
@@ -40,14 +52,11 @@ export default function Page() {
       console.log("error in fetching users", err);
     }
   };
-  const handleDecotrStatus = async (doctorId: string) => {
+  const handleDecotrStatus = async (doctorId: number) => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/admin/changeAccountStatus",
-        {
-          doctorId,
-          status: "approved",
-        },
+      const res = await axiosInstance.put(
+        `http://localhost:8089/api/v1/admin/approve-doctors/${doctorId}`,
+      
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -90,30 +99,19 @@ export default function Page() {
           </TableHeader>
           <TableBody>
             {doctors.map(
-              (
-                ele: {
-                  firstName: string;
-                  email: string;
-                  status: string;
-                  _id: string;
-                  specialization: string;
-                  feesPerCunsaltation: number;
-                  experience: number;
-                },
-                idx
-              ) => (
+              (ele:DoctorInputProps,idx) => (
                 <TableRow key={idx}>
                   <TableHead className="w-[100px]">{ele.firstName}</TableHead>
                   <TableHead>{ele.email}</TableHead>
                   <TableHead>{ele.specialization}</TableHead>
                   <TableHead>{ele.experience}</TableHead>
-                  <TableHead>{ele.feesPerCunsaltation}</TableHead>
+                  <TableHead>{ele.feesPerConsultation}</TableHead>
                   <TableHead className="text-right">
-                    {ele.status === "pending" ? (
+                    {ele.status === "PENDING" ? (
                       <>
                         <Button
                           variant={"destructive"}
-                          onClick={() => handleDecotrStatus(ele._id)}
+                          onClick={() => handleDecotrStatus(ele.id)}
                         >
                           {ele.status}
                         </Button>
@@ -123,6 +121,28 @@ export default function Page() {
                         <p className="text-green-600">Addroved</p>
                       </>
                     )}
+                  </TableHead>
+                </TableRow>
+              )
+            )}
+            {pendingDoctors.map(
+              (ele:DoctorInputProps,idx) => (
+                <TableRow key={idx}>
+                  <TableHead className="w-[100px]">{ele.firstName}</TableHead>
+                  <TableHead>{ele.email}</TableHead>
+                  <TableHead>{ele.specialization}</TableHead>
+                  <TableHead>{ele.experience}</TableHead>
+                  <TableHead>{ele.feesPerConsultation}</TableHead>
+                  <TableHead className="text-right">
+                    
+                      
+                        <Button
+                          variant={"destructive"}
+                          onClick={() => handleDecotrStatus(ele.id)}
+                        >
+                          {ele.status}
+                        </Button>
+                   
                   </TableHead>
                 </TableRow>
               )

@@ -26,6 +26,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
+import axiosInstance from "@/app/login/axiosInstance";
+import { headers } from "next/headers";
 
 export default function Page() {
   const token = useSelector(selectToken);
@@ -35,10 +37,10 @@ export default function Page() {
   const [updateStr, setUpdateStr] = useState("");
   const handleCreateCat = async () => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/category/create-category",
+      const res = await axiosInstance.post(
+        "http://localhost:8089/api/v1/category/create",
         {
-          name: category,
+          name: category
         },
         {
           headers: {
@@ -46,7 +48,7 @@ export default function Page() {
           },
         }
       );
-      setCategories(res.data.allCategories);
+      setCategories(res.data);
       setCategory("");
     } catch (err) {
       console.log("Error creating category", err);
@@ -55,11 +57,16 @@ export default function Page() {
   const getCategories = async () => {
     try {
       const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/category/get-category"
+        "http://localhost:8089/api/v1/category/all",
+         {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
       );
 
-      setCategories(res.data.category);
-      console.log(res.data.category)
+      setCategories(res.data);
+      console.log(res.data)
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -69,12 +76,17 @@ export default function Page() {
   }, []);
   const handleDeleteCategory = async (id: string) => {
     try {
-      const res = await axios.post(
-        `https://doc-app-7im8.onrender.com/api/v1/category/delete-category/${id}`
+      const res = await axiosInstance.delete(
+        `http://localhost:8089/api/v1/category/delete/${id}`,
+        {
+          headers:{
+             Authorization: `Bearer ${token}`
+          }
+        }
       );
      
 
-      setCategories(res.data.allCategories);
+      setCategories(res.data);
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -128,12 +140,12 @@ export default function Page() {
               </TableRow>
             </TableHeader>
             <TableBody className="mt-12">
-              {categories.map((ele: { name: string; _id: string }, idx) => (
+              {categories.map((ele: { name: string; id: string }, idx) => (
                 <TableRow key={idx}>
                   <TableHead className="w-[100px]">{ele.name}</TableHead>
                   <TableHead className="text-right ">
                     <Button
-                      onClick={() => handleDeleteCategory(ele._id)}
+                      onClick={() => handleDeleteCategory(ele.id)}
                       variant={"ghost"}
                       className="mr-2"
                     >
@@ -156,7 +168,7 @@ export default function Page() {
                             />
                             <Button
                               className="mt-4"
-                              onClick={() => handleUpdateCategory(ele._id)}
+                              onClick={() => handleUpdateCategory(ele.id)}
                             >
                               Update
                             </Button>

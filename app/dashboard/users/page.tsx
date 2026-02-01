@@ -13,13 +13,14 @@ import { useSelector } from "react-redux";
 import { selectToken } from "@/redux/userSlice";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import axiosInstance from "@/app/login/axiosInstance";
 export default function Page() {
   const token = useSelector(selectToken);
   const [users, setUsers] = useState([]);
   const handleUsers = async () => {
     try {
-      const res = await axios.get(
-        "https://doc-app-7im8.onrender.com/api/v1/admin/getAllUser",
+      const res = await axiosInstance.get(
+        "http://localhost:8089/api/v1/admin/getall-users",
         {
           headers: {
             Authorization: `Bearer ${token}`,
