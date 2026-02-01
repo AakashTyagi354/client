@@ -36,6 +36,7 @@ import {
 } from "@/redux/doctorSlice";
 import { Trash2 } from "lucide-react";
 import Image from "next/image";
+import axiosInstance from "@/app/login/axiosInstance";
 
 const navlinks = [
   {
@@ -114,8 +115,8 @@ export default function Navbar() {
 
   const handleNotificationDelete = async (idx: number) => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/delete-all-notification",
+      const res = await axiosInstance.post(
+        "http://localhost:8089/user/delete-notification",
         {
           userId: currentUser?.id,
           idx,
@@ -134,11 +135,9 @@ export default function Navbar() {
   const handleClearNotificatio = async () => {
     try {
       console.log("reached");
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/clear-all-notifications",
-        {
-          userId: currentUser?.id,
-        },
+
+      const res = await axiosInstance.delete(
+        `http://localhost:8089/api/v1/notifications/delete/${currentUser?.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -146,25 +145,25 @@ export default function Navbar() {
         }
       );
       console.log(res.data);
-      setNotifications(res.data.data);
+      setNotifications([]);
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }
   };
+
   const handleNotifications = async () => {
     try {
-      const res = await axios.post(
-        "https://doc-app-7im8.onrender.com/api/v1/user/get-all-notification",
-        {
-          userId: currentUser?.id,
-        },
+      const res = await axiosInstance.get(
+        `http://localhost:8089/api/v1/notifications/user/${currentUser?.id}`,
+      
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setNotifications(res.data.notification);
+      console.log("NOTIFICATIONS", res.data);
+      setNotifications(res.data);
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }
@@ -223,7 +222,13 @@ export default function Navbar() {
                   )}
                 </div>
               </DropdownMenuTrigger>
+           
               <DropdownMenuContent className="w-[480px] mr-14  max-h-[500px] overflow-y-scroll">
+                 {
+              notifications && notifications.length === 0 && <>
+              <p className="text-sm text-gray-500">No notifications</p>
+              </>
+            }
                 {notifications &&
                   notifications.length > 0 &&
                   notifications.map((ele: { message: string }, idx) => (
