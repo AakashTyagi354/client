@@ -162,8 +162,8 @@ export default function Navbar() {
           },
         }
       );
-      console.log("NOTIFICATIONS", res.data);
-      setNotifications(res.data);
+      console.log("NOTIFICATIONS", res.data.data);
+      setNotifications(res.data.data);
     } catch (err) {
       console.log("ERROR IN NOTIFICAIONS", err);
     }

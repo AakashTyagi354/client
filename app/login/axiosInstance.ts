@@ -27,9 +27,9 @@ axiosInstance.interceptors.request.use((config) => {
   if (token) {
     config.headers["Authorization"] = `Bearer ${token}`;
     // If your API expects token in body for POST/PUT
-    if (config.method !== 'get' && config.data && typeof config.data === 'object') {
-      config.data.token = token;
-    }
+    // if (config.method !== 'get' && config.data && typeof config.data === 'object') {
+    //   config.data.token = token;
+    // }
   }
   return config;
 });

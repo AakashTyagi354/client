@@ -280,7 +280,7 @@ export default function Page() {
 
       // 1. Call your new Payment Microservice (via Gateway)
       // Replace URL with your actual API Gateway or Payment MS URL
-      const { data } = await axiosInstance.post(
+      const response = await axiosInstance.post(
         "http://localhost:8089/api/v1/payments/create",
         {
           amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,
@@ -300,9 +300,10 @@ export default function Page() {
         currency: "INR",
         name: "Delma Health",
         description: "Doctor Appointment Booking",
-        order_id: data.rzpOrderId, // The ID returned by your Java service
+        order_id: response.data.data, // The ID returned by your Java service
         handler: async function (response: any) {
           // 3. SUCCESS CALLBACK: Send to your MS for verification
+          console.log("Razorpay response:", response);
           try {
             const verifyRes = await axiosInstance.post(
               "http://localhost:8089/api/v1/payments/verify",

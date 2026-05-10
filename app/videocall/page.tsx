@@ -66,7 +66,7 @@ const UserAppointments = () => {
 
   const getUserAppointments = async () => {
     try {
-      const res = await axiosInstance.get<AppointmentResponse[]>(
+      const res = await axiosInstance.get<ApiResponse<AppointmentResponse[]>>(
         "http://localhost:8089/api/v1/appointments/user",
         {
           headers: {
@@ -78,11 +78,13 @@ const UserAppointments = () => {
         }
       );
 
-      const appointmentsUI: AppointmentUI[] = res.data.map((a) => ({
+      console.log("Appointments response:", res.data);
+
+      const appointmentsUI: AppointmentUI[] = res.data.data.map((a) => ({
         id: a.id,
         doctorId: a.doctorId,
-        date: a.createdAt.split("T")[0],
-        time: a.createdAt.split("T")[1].substring(0, 5),
+        date: a.createdAt ? a.createdAt.split("T")[0] : "",
+        time: a.createdAt ? a.createdAt.split("T")[1]?.substring(0, 5) : "",
         status: a.status,
       }));
 
@@ -182,7 +184,7 @@ const PatientAppointments = () => {
       //   }
       // );
 
-       const res = await axiosInstance.get<AppointmentResponse[]>(
+      const res = await axiosInstance.get<ApiResponse<AppointmentResponse[]>>(
         "http://localhost:8089/api/v1/appointments/doctor",
         {
           headers: {
@@ -194,11 +196,11 @@ const PatientAppointments = () => {
         }
       );
 
-        const appointmentsUI: AppointmentUI[] = res.data.map((a) => ({
+      const appointmentsUI: AppointmentUI[] = res.data.data.map((a) => ({
         id: a.id,
         doctorId: a.userId,
-        date: a.createdAt.split("T")[0],
-        time: a.createdAt.split("T")[1].substring(0, 5),
+        date: a.createdAt ? a.createdAt.split("T")[0] : "",
+        time: a.createdAt ? a.createdAt.split("T")[1]?.substring(0, 5) : "",
         status: a.status,
       }));
       setDoctorAppointments(appointmentsUI);
