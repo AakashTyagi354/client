@@ -146,7 +146,7 @@ export default function Medicines() {
               <Link href={`/medicines/${ele.id}`} key={idx}>
                 <div className="h-[390px] w-[220px] shadow-sm cursor-pointer transition-all hover:scale-105 border border-dotted">
                   <Image
-                    src={products.imageURL}
+                    src={ele.imageURL}
                     alt=""
                     height={100}
                     width={100}

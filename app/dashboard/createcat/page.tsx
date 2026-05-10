@@ -48,7 +48,7 @@ export default function Page() {
           },
         }
       );
-      setCategories(res.data);
+      setCategories(res.data.data);
       setCategory("");
     } catch (err) {
       console.log("Error creating category", err);
@@ -65,8 +65,8 @@ export default function Page() {
         }
       );
 
-      setCategories(res.data);
-      console.log(res.data)
+      setCategories(res.data.data);
+      console.log(res.data.data)
     } catch (err) {
       console.log("Error creating category", err);
     }
@@ -86,7 +86,7 @@ export default function Page() {
       );
      
 
-      setCategories(res.data);
+      setCategories(res.data.data);
     } catch (err) {
       console.log("Error creating category", err);
     }

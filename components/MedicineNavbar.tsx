@@ -89,12 +89,12 @@ export default function MedicineNavbar() {
   const handleCart = (item: ProductInputProps) => {
     dispatch(
       addToCart({
-        productId: item._id,
+        productId: item.id,
         quantity: item.quantity,
         description: item.description,
         price: item.price,
         name: item.name,
-        category: item.category,
+        category: item.categoryId,
         photo: item.photo,
       })
     );
@@ -118,7 +118,7 @@ export default function MedicineNavbar() {
                 {searchResults.map((ele: ProductInputProps, idx) => (
                   <div key={idx}>
                     <div className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 ">
-                      <Link href={`/medicines/${ele._id}`}>
+                      <Link href={`/medicines/${ele.id}`}>
                         <p className="text-sm text-gray-500 tracking-wide">
                           {" "}
                           {textFormater(ele.name, 30)}

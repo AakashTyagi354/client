@@ -41,7 +41,7 @@ export default function Page() {
         }
       )
 
-      setPendingDoctors(pendingDocResponse.data);
+      setPendingDoctors(pendingDocResponse.data.data);
 
       if (Array.isArray(res.data)) {
         setDoctors(res.data);

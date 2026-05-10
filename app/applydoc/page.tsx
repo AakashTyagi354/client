@@ -54,11 +54,10 @@ const router = useRouter();
       const res = await axiosInstance.post(
         "http://localhost:8089/api/v1/doctor/apply",
         {
-          firstName: firstname,
-          lastName: lastname,
-          phone: phonenumber,
+          name: firstname,
+          phoneNo: phonenumber,
           experience: experienceNumber,
-          feesPerConsultation: feesPerConsultationNumber,
+          feesPerCunsaltation: feesPerConsultationNumber,
           // languages: languagesArray,
           email,
           password,
@@ -73,7 +72,7 @@ const router = useRouter();
       );
 
       toast({
-        description: res.data,
+        description: res.data.success,
       });
 
       await handleLogout();

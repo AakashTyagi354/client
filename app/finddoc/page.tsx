@@ -127,11 +127,20 @@ export default function Page() {
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [selectedSlotId, selectSelectedSlotId] = useState<number | null>(null);
-  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String, fees:number } | null>(null);
+  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String, fees: number } | null>(null);
 
 
 
-  //
+  // AI Symptom Checker state
+  const [symptoms, setSymptoms] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<{
+    specialization: string;
+    message: string;
+    disclaimer: string;
+  } | null>(null);
+
+
 
   const onChange = (time: any) => {
     setSelectedTime(time);
@@ -142,7 +151,7 @@ export default function Page() {
       setIsLoading(true);
       try {
         const response = await axiosInstance.get("/api/users/doctors");
-        setDocs(response.data);
+        setDocs(response.data.data);
         console.log("DOCTORS DATA:", response.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
@@ -179,7 +188,7 @@ export default function Page() {
   // }, []);
 
 
-  const handleAvailabilityCheck = async (doctorId: number, firstName: String,singleDoctor: DoctorInputProps) => {
+  const handleAvailabilityCheck = async (doctorId: number, firstName: String, singleDoctor: DoctorInputProps) => {
     setIsLoading(true);
     try {
       const dateStr = startDate ? dayjs(startDate).format("YYYY-MM-DD") : getTodaysDate();
@@ -189,7 +198,7 @@ export default function Page() {
           date: dateStr
         }
       });
-      const slots = res.data;
+      const slots = res.data.data;
       console.log("Available slots:", slots);
       setAvailableSlots(slots);
       setActiveDoctor({ id: doctorId, name: firstName, fees: singleDoctor.feesPerConsultation });
@@ -255,7 +264,7 @@ export default function Page() {
   //   }
   // };
 
-   const loadRazorpayScript = async () => {
+  const loadRazorpayScript = async () => {
     try {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -267,27 +276,27 @@ export default function Page() {
   };
 
   const makePayment = async () => {
-      try {
+    try {
 
       // 1. Call your new Payment Microservice (via Gateway)
       // Replace URL with your actual API Gateway or Payment MS URL
       const { data } = await axiosInstance.post(
         "http://localhost:8089/api/v1/payments/create",
         {
-             amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,
-     refId: `SLOT_${selectedSlotId}`,
-        sourceType: "APPOINTMENT"
+          amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,
+          refId: `SLOT_${selectedSlotId}`,
+          sourceType: "APPOINTMENT"
         }
 
 
       );
 
       // 2. Ensure script is loaded before opening modal
-      await loadRazorpayScript(); 
+      await loadRazorpayScript();
 
       const options = {
         key: "rzp_test_S9jVkGSiveLNXR", // Move this to .env.local
-      amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,// Razorpay expects subunits (paise)
+        amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,// Razorpay expects subunits (paise)
         currency: "INR",
         name: "Delma Health",
         description: "Doctor Appointment Booking",
@@ -446,7 +455,7 @@ export default function Page() {
             setSearchResults(response.data.data);
             console.log("first", response.data.data);
           };
-          
+
           fetchSearchResults();
         } catch (error) {
           console.error("Error fetching search results:", error);
@@ -523,6 +532,47 @@ export default function Page() {
     setDocs(filteredDocs);
   };
 
+
+  const handleSymptomCheck = async () => {
+    if (!symptoms.trim()) {
+      toast({ variant: "destructive", title: "Please describe your symptoms" });
+      return;
+    }
+    setAiLoading(true);
+    setAiResult(null);
+    try {
+      // Step 1 — Call AI service
+      const aiResponse = await axiosInstance.post(
+        "http://localhost:8089/api/v1/ai/symptom-check",
+        { symptoms }
+      );
+      const result = aiResponse.data.data;
+      setAiResult(result);
+
+      // Step 2 — Search doctors by returned specialization
+      const doctorResponse = await axiosInstance.get(
+        `http://localhost:8089/api/v1/doctor/search/${result.specialization}`
+      );
+      const filteredDoctors = doctorResponse.data.data || [];
+      setDocs(filteredDoctors);
+      setCurrentPage(1);
+
+      toast({
+        title: `Found ${filteredDoctors.length} ${result.specialization} specialists`,
+        description: result.message,
+      });
+    } catch (error) {
+      console.error("AI symptom check failed:", error);
+      toast({
+        variant: "destructive",
+        title: "AI service unavailable",
+        description: "Please try manual search instead.",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const [hydration, setHydration] = useState(false);
   useEffect(() => {
     setHydration(true);
@@ -592,7 +642,7 @@ export default function Page() {
                               variant={"outline"}
                               onClick={() =>
                                 handleAvailabilityCheck(
-                                  ele.id,
+                                  ele.userId,
                                   ele.firstName,
                                   ele
                                 )
@@ -638,6 +688,61 @@ export default function Page() {
         <WidthWrapper className="">
           <div className="bg-gray-50 w-full flex">
             <div className="flex-grow">
+              {/* AI Symptom Checker */}
+              <div className="w-full max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-sm border border-[#78355b]/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">🤖</span>
+                  <h2 className="text-base font-semibold text-gray-800">
+                    AI Symptom Checker
+                  </h2>
+                  <span className="text-xs bg-[#78355b]/10 text-[#78355b] px-2 py-0.5 rounded-full font-medium">
+                    Powered by AI
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Describe your symptoms and we'll recommend the right specialist for you.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={symptoms}
+                    onChange={(e) => setSymptoms(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSymptomCheck()}
+                    placeholder="e.g. chest pain, shortness of breath, fever..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#78355b]"
+                  />
+                  <Button
+                    onClick={handleSymptomCheck}
+                    disabled={aiLoading}
+                    className="bg-[#78355b] text-white hover:bg-[#5e2947] text-sm px-4"
+                  >
+                    {aiLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Analyze"}
+                  </Button>
+                </div>
+
+                {/* AI Result */}
+                {aiResult && (
+                  <div className="mt-4 p-3 bg-[#78355b]/5 rounded-lg border border-[#78355b]/20">
+                    <p className="text-sm font-semibold text-[#78355b]">
+                      Recommended: {aiResult.specialization}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">{aiResult.message}</p>
+                    <p className="text-xs text-gray-400 mt-1 italic">{aiResult.disclaimer}</p>
+                    <button
+                      onClick={async () => {
+                        const response = await axiosInstance.get("/api/users/doctors");
+                        setDocs(response.data.data);
+                        setAiResult(null);
+                        setSymptoms("");
+                        setCurrentPage(1);
+                      }}
+                      className="text-xs text-[#78355b] underline mt-2"
+                    >
+                      Clear and show all doctors
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="flex w-[300px] gap-4 overflow-hidden md:w-full  justify-center items-center mt-12">
                 <Filter />
                 <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
@@ -729,7 +834,7 @@ export default function Page() {
                           {/* THIS IS THE ONLY BUTTON YOU NEED HERE */}
                           <Button
                             className="w-full bg-[#78355b] text-white hover:bg-[#5e2947]"
-                            onClick={() => handleAvailabilityCheck(ele.id, ele.firstName,ele)}
+                            onClick={() => handleAvailabilityCheck(ele.userId, ele.firstName, ele)}
                           >
                             Check Availability
                           </Button>
@@ -820,57 +925,57 @@ export default function Page() {
             </div>
           </div>
         </WidthWrapper>
-       
+
 
 
       </div>
-       <Dialog open={isSlotModalOpen} onOpenChange={setIsSlotModalOpen}>
-          <DialogContent className="fixed left-1/2 top-1/2 z-[100] grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white p-6 shadow-lg duration-200 rounded-lg">
-            <DialogHeader>
-              <DialogTitle className="text-[#78355b] text-xl font-bold">
-                Available Time Slots
-              </DialogTitle>
-              <p className="text-sm text-gray-500">
-                Booking with **Dr. {activeDoctor?.name}** for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
+      <Dialog open={isSlotModalOpen} onOpenChange={setIsSlotModalOpen}>
+        <DialogContent className="fixed left-1/2 top-1/2 z-[100] grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white p-6 shadow-lg duration-200 rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-[#78355b] text-xl font-bold">
+              Available Time Slots
+            </DialogTitle>
+            <p className="text-sm text-gray-500">
+              Booking with **Dr. {activeDoctor?.name}** for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
+            </p>
+          </DialogHeader>
+
+          {/* The Scrollable Slot Grid */}
+          <div className="grid grid-cols-3 gap-3 my-6 max-h-[300px] overflow-y-auto p-1">
+            {availableSlots.length > 0 ? (
+              availableSlots.map((slot) => (
+                <button
+                  key={slot.id}
+                  onClick={() => selectSelectedSlotId(slot.id.toString())}
+                  className={`py-2 px-1 text-xs font-bold rounded-md border transition-all ${selectedSlotId === slot.id.toString()
+                    ? "bg-[#78355b] text-white border-[#78355b] shadow-md"
+                    : "bg-gray-50 text-gray-700 border-gray-200 hover:border-[#78355b]"
+                    }`}
+                >
+                  {slot.startTime.substring(0, 5)}
+                </button>
+              ))
+            ) : (
+              <p className="col-span-3 text-center py-6 text-gray-400 italic">
+                No available slots for this date.
               </p>
-            </DialogHeader>
+            )}
+          </div>
 
-            {/* The Scrollable Slot Grid */}
-            <div className="grid grid-cols-3 gap-3 my-6 max-h-[300px] overflow-y-auto p-1">
-              {availableSlots.length > 0 ? (
-                availableSlots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    onClick={() => selectSelectedSlotId(slot.id.toString())}
-                    className={`py-2 px-1 text-xs font-bold rounded-md border transition-all ${selectedSlotId === slot.id.toString()
-                      ? "bg-[#78355b] text-white border-[#78355b] shadow-md"
-                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-[#78355b]"
-                      }`}
-                  >
-                    {slot.startTime.substring(0, 5)}
-                  </button>
-                ))
-              ) : (
-                <p className="col-span-3 text-center py-6 text-gray-400 italic">
-                  No available slots for this date.
-                </p>
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsSlotModalOpen(false)} className="flex-1">
-                Cancel
-              </Button>
-              <Button
-                onClick={makePayment}
-                disabled={!selectedSlotId}
-                className="flex-1 bg-[#78355b] text-white hover:bg-[#5e2947]"
-              >
-                Confirm & Book
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          <div className="flex gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsSlotModalOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button
+              onClick={makePayment}
+              disabled={!selectedSlotId}
+              className="flex-1 bg-[#78355b] text-white hover:bg-[#5e2947]"
+            >
+              Confirm & Book
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

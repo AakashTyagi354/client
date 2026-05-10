@@ -81,8 +81,8 @@ export default function UploadForm() {
     }
 
     const formatData = new FormData();
-    formatData.append("file",file);
-    formatData.append("userId", user?.id);
+    formatData.append("file", file);
+    formatData.append("userId", String(user?.id ?? ""));
 
     try {
       const res = await axios.post(

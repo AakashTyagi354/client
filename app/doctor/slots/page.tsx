@@ -43,7 +43,7 @@ export default function CreateSlotPage() {
                 },
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setExistingSlots(response.data);
+            setExistingSlots(response.data.data);
             toast({ title: "Schedule Loaded", description: `Showing slots for ${formData.date}` });
         } catch (err) {
             toast({ variant: "destructive", description: "Failed to fetch schedule for this date." });
@@ -101,7 +101,7 @@ export default function CreateSlotPage() {
             <div className="w-full bg-[#78355b] py-12 text-white">
                 <WidthWrapper>
                     <h1 className="text-3xl font-bold">Manage Your Schedule</h1>
-                    <p className="opacity-80 mt-2 text-lg italic">"Your time is the bridge to patient health."</p>
+                    <p className="opacity-80 mt-2 text-lg italic">Your time is the bridge to patient health.</p>
                 </WidthWrapper>
             </div>
 
@@ -204,7 +204,7 @@ export default function CreateSlotPage() {
                                         <CalIcon size={32} />
                                     </div>
                                     <p className="text-gray-400 text-sm">No slots found for this date.</p>
-                                    <p className="text-xs text-gray-400 mt-1">Use "Check Existing" to refresh.</p>
+                                    <p className="text-xs text-gray-400 mt-1">Use Check Existing to refresh.</p>
                                 </div>
                             )}
                         </div>

@@ -22,8 +22,14 @@ import { selectToken } from "@/redux/userSlice";
 import { toast } from "@/components/ui/use-toast";
 import axiosInstance from "@/app/login/axiosInstance";
 
+type Category = {
+  id: number | string;
+  name: string;
+  slug?: string;
+};
+
 export default function Page() {
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -87,7 +93,7 @@ export default function Page() {
       productData.append("price", price);
       productData.append("quantity", quantity);
 
-      const selectedCategory = categories.find((cat:any) => cat.id === Number(position));
+      const selectedCategory = categories.find((cat) => String(cat.id) === position);
       const categorySlug = selectedCategory?.slug || "";
 
      productData.append("categorySlug", categorySlug);// Matches @RequestParam("categorySlug")
@@ -146,8 +152,8 @@ export default function Page() {
                   value={position}
                   onValueChange={setPosition}
                 >
-                  {categories.map((ele: { name: string; id: string }, idx) => (
-                    <DropdownMenuRadioItem value={ele.id} key={idx}>
+                  {categories.map((ele: Category, idx) => (
+                    <DropdownMenuRadioItem value={String(ele.id)} key={idx}>
                       {ele.name}
                     </DropdownMenuRadioItem>
                   ))}

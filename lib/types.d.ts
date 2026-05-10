@@ -15,7 +15,7 @@
 
 interface DoctorInputProps {
   id: number;                     // ✅ SQL ID
-  userId: string;                 // ✅ from backend
+  userId: number;                 // ✅ from backend
   firstName: string;
   lastName: string;
   phone: string;
@@ -30,7 +30,7 @@ interface DoctorInputProps {
 }
 
 interface DocumentInputProps {
-  _id: string;
+  id: number;
   userId: string;
   url: string;
   type: string;
@@ -49,15 +49,18 @@ interface MRPInputProps {
 }
 
 interface ProductInputProps {
-  _id: string;
-  description;
-  price: number;
-  slug: string;
-  category: any;
-  quantity: number;
-  photo: object;
-  shipping: boolean;
+  // backend may provide SQL `id` or Mongo `_id` depending on endpoint
+  id?: number | any;
+  // _id?: string;
   name: string;
+  description: string;
+  price: number;
+  slug?: string;
+  categoryId?: number | any ;
+  quantity?: number | any; 
+  photo?: any;
+  imageURL?: string |  any; // UI-friendly image field used across components
+  shipping?: boolean;
 }
 
 interface AppointmentInputProps {
