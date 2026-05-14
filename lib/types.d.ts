@@ -13,6 +13,13 @@
 //   gender: string;
 // }
 
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 interface DoctorInputProps {
   id: number;                     // ✅ SQL ID
   userId: number;                 // ✅ from backend
@@ -79,6 +86,8 @@ interface AppointmentInputProps {
   slotId: number;
   status: "BOOKED" | "CANCELLED" | "COMPLETED";
   createdAt: string;
+   slotStartTime: string | null;  
+  slotEndTime: string | null; 
 }
 
 interface AppointmentUI {

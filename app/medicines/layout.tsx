@@ -1,18 +1,26 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import MedicineNavbar from "../../components/MedicineNavbar";
+// ─────────────────────────────────────────────────────────────────────────────
+// Medicines Layout — /medicines/**
+//
+// Wraps all pages under /medicines/ with the MedicineNavbar.
+// MedicineNavbar renders sticky below the main Navbar (top-14).
+//
+// Fixes applied:
+//   - Removed unused Button and Link imports
+//   - Removed unnecessary Readonly wrapper on props
+//   - Removed redundant Fragment wrapper
+// ─────────────────────────────────────────────────────────────────────────────
 
-export default function Layout({
+import MedicineNavbar from "@/components/MedicineNavbar";
+
+export default function MedicinesLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <>
-      <main className="">
-        <MedicineNavbar />
-        <div className="flex-grow">{children}</div>
-      </main>
-    </>
+    <main>
+      <MedicineNavbar />
+      <div className="flex-grow">{children}</div>
+    </main>
   );
 }

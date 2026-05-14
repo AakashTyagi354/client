@@ -1,166 +1,234 @@
 "use client";
 
-import { CiSearch } from "react-icons/ci";
-import WidthWrapper from "./WidthWrapper";
-import { Button } from "./ui/button";
-import { MdOutlineAddShoppingCart, MdShoppingCart } from "react-icons/md";
+// ─────────────────────────────────────────────────────────────────────────────
+// MedicineNavbar — E-Store search bar + cart button
+//
+// Renders a sticky sub-navbar below the main Navbar with:
+//   - Debounced product search (500ms) with dropdown results
+//   - Add to cart from search results
+//   - View cart button with item count
+//
+// API:
+//   GET /api/v1/product/search?keyword=X&page=0&size=8
+//   Response: ApiResponse<Page<ProductResponse>>
+//
+// Fixes applied:
+//   - Search was hitting dead render.com URL — fixed to new microservice endpoint
+//   - res.data.data.content instead of res.data
+//   - handleCart: productId/category cast to string, quantity fixed to 1
+//   - event: any → event: MouseEvent
+//   - Removed unused axios import — switched to axiosInstance
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { selectToken } from "@/redux/userSlice";
 import { addToCart, selectCartItems } from "@/redux/cartSlice";
+import axiosInstance from "@/app/login/axiosInstance";
+import WidthWrapper from "./WidthWrapper";
 import Link from "next/link";
-import {
-  MouseEventHandler,
-  useState,
-  useEffect,
-  useRef,
-  MutableRefObject,
-} from "react";
-import axios from "axios";
+import { Search, ShoppingCart } from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const truncate = (str: string, len: number): string =>
+  str?.length > len ? str.substring(0, len) + "…" : str ?? "";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function MedicineNavbar() {
   const dispatch = useDispatch();
+  const token = useSelector(selectToken);
   const cart = useSelector(selectCartItems);
-  const [view, setView] = useState(false); // State to control the visibility of suggestions
-  const [searchTerm, setSearchTerm] = useState(""); // State to hold the search term
-  const [searchResults, setSearchResults] = useState([]); // State to hold the search results
 
-  const searchTimeoutRef: MutableRefObject<NodeJS.Timeout | null> =
-    useRef(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<ProductInputProps[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [searching, setSearching] = useState(false);
 
-  // Function to handle input box click
-  const handleInputClick = () => {
-    setView(true); // Show suggestions when input box is clicked
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to handle input change with debouncing
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = event.target.value;
-    setSearchTerm(inputValue.trim());
-  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // SEARCH — debounced 500ms
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // Function to fetch search results
   useEffect(() => {
-    // Clear the previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
     }
 
-    // Set a new timeout to debounce the search term
-    searchTimeoutRef.current = setTimeout(() => {
-      if (searchTerm.trim() !== "") {
-        try {
-          const fetchSearchResults = async () => {
-            const response = await axios.get(
-              `https://doc-app-7im8.onrender.com/api/v1/product/search/${searchTerm}`
-            );
-            setSearchResults(response.data);
-          };
-          fetchSearchResults();
-        } catch (error) {
-          console.error("Error fetching search results:", error);
-        }
-      } else {
-        setSearchResults([]); // Clear search results when search term is empty
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await axiosInstance.get(
+          `http://localhost:8089/api/v1/product/search?keyword=${searchTerm}&page=0&size=8`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSearchResults(res.data.data.content || []);
+        setShowResults(true);
+      } catch (err) {
+        console.error("Search failed:", err);
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
       }
-    }, 500); // Adjust the debounce delay as needed
+    }, 500);
 
-    // Cleanup function to clear timeout when search term changes
     return () => {
-      if (searchTimeoutRef.current !== null) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [searchTerm]);
 
-  // Function to handle clicking outside the search box to close the suggestions
+  // ─────────────────────────────────────────────────────────────────────────
+  // CLICK OUTSIDE
+  // ─────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    const handleClickOutside = (event: any) => {
-      if (view && !event.target.closest(".search-container")) {
-        setView(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [view]);
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADD TO CART
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleCart = (item: ProductInputProps) => {
     dispatch(
       addToCart({
-        productId: item.id,
-        quantity: item.quantity,
+        productId: String(item.id),
+        quantity: 1,
         description: item.description,
         price: item.price,
         name: item.name,
-        category: item.categoryId,
-        photo: item.photo,
+        category: String(item.categoryId),
+        photo: item.imageURL,
       })
     );
   };
 
   return (
-    <div className="sticky top-14 z-10 border-b border-gray-100 bg-white shadow-sm h-16">
+    <div className="sticky top-14 z-10 border-b border-gray-100 bg-white shadow-sm h-14">
       <WidthWrapper className="h-full">
-        <div className="flex items-center h-full justify-evenly ">
-          <div className="border p-2 flex gap-2 w-[50%] relative search-container">
-            <CiSearch size={20} className="cursor-pointer" />
-            <input
-              type="text"
-              placeholder="Search for medicines, health products and much more"
-              className="bg-inherit outline-none focus:outline-none w-full text-sm"
-              onClick={handleInputClick} // Toggle suggestions on input click
-              onChange={handleInputChange} // Debounced input change handler
-            />
-            {view && (
-              <div className="w-full flex flex-col gap-4 max-h-[300px] py-4  overflow-y-scroll bg-gray-50 absolute top-[37px] left-0">
-                {searchResults.map((ele: ProductInputProps, idx) => (
-                  <div key={idx}>
-                    <div className="w-[90%] h-[50px] mx-auto  flex items-center justify-between border-b border-gray-200 py-4 cursor-pointer  hover:bg-gray-100 ">
-                      <Link href={`/medicines/${ele.id}`}>
-                        <p className="text-sm text-gray-500 tracking-wide">
-                          {" "}
-                          {textFormater(ele.name, 30)}
+        <div className="flex items-center h-full gap-4 justify-center">
+
+          {/* Search bar */}
+          <div ref={containerRef} className="relative w-[500px]">
+            <div className="flex items-center gap-2 border border-gray-200
+                            rounded-xl px-3 py-2 focus-within:border-[#78355b]
+                            transition-colors bg-gray-50 focus-within:bg-white">
+              <Search
+                size={15}
+                className={`flex-shrink-0 transition-colors ${
+                  searching ? "text-[#78355b] animate-pulse" : "text-gray-400"
+                }`}
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                placeholder="Search medicines, health products…"
+                className="bg-transparent outline-none text-sm w-full
+                           placeholder:text-gray-400 text-gray-800"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSearchResults([]);
+                    setShowResults(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors
+                             flex-shrink-0 text-lg leading-none"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Search dropdown */}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white
+                              border border-gray-100 rounded-2xl shadow-lg
+                              max-h-72 overflow-y-auto z-20">
+                {searchResults.length === 0 && !searching && (
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-gray-400">No results found</p>
+                  </div>
+                )}
+                {searchResults.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between px-4 py-3
+                               border-b border-gray-50 hover:bg-gray-50
+                               transition-colors last:border-b-0"
+                  >
+                    <Link
+                      href={`/medicines/${item.id}`}
+                      onClick={() => setShowResults(false)}
+                      className="flex items-center gap-3 flex-1 min-w-0"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {truncate(item.name, 35)}
                         </p>
-                      </Link>
-                      <button
-                        onClick={() => handleCart(ele)}
-                        className="px-4 py-1 text-sm text-gray-500 border border-[#78355B] transition-all hover:bg-[#78355B] hover:text-white"
-                      >
-                        Add
-                      </button>
-                    </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          ₹{item.price}
+                        </p>
+                      </div>
+                    </Link>
+                    <button
+                      onClick={() => handleCart(item)}
+                      className="ml-3 flex-shrink-0 text-xs px-3 py-1.5
+                                 border border-[#78355b] text-[#78355b]
+                                 rounded-lg hover:bg-[#78355b] hover:text-white
+                                 transition-colors font-medium"
+                    >
+                      Add
+                    </button>
                   </div>
                 ))}
-
-                {searchResults.length === 0 && (
-                  <p className="w-full text-center text-sm text-gray-500">
-                    No results found
-                  </p>
-                )}
               </div>
             )}
           </div>
 
-          <div className="">
-            <Link href={"/medicines/cartpage"}>
-              <Button className=" bg-[#78355B] hover:bg-[#78355B] hover:opacity-95 transition-all rounded-none flex gap-4 relative">
-                <MdShoppingCart size={20} />
-                <div className="rounded-full h-5 w-5 bg-white absolute top-[2px] left-[25px] text-gray-700">
-                  {cart.length}
-                </div>
-                View Cart
-              </Button>
-            </Link>
-          </div>
+          {/* Cart button */}
+          <Link href="/medicines/cartpage">
+            <button className="flex items-center gap-2 px-4 py-2 bg-[#78355b]
+                               text-white text-sm font-medium rounded-xl
+                               hover:bg-[#6a2d50] transition-colors relative">
+              <ShoppingCart size={16} />
+              View Cart
+              {cart.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5
+                                 bg-white text-[#78355b] rounded-full text-[10px]
+                                 font-bold flex items-center justify-center
+                                 border border-[#78355b]">
+                  {cart.length > 9 ? "9+" : cart.length}
+                </span>
+              )}
+            </button>
+          </Link>
+
         </div>
       </WidthWrapper>
     </div>
   );
-}
-
-function textFormater(str: string, len: number) {
-  if (str.length < len) return str;
-  return str.substring(0, len) + "...";
 }

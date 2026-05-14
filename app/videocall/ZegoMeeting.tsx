@@ -1,13 +1,24 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZegoMeeting — Video call UI component
+//
+// Initializes ZEGO UIKit with the token from backend.
+// Runs client-side only — loaded via dynamic import with ssr: false.
+//
+// Fixes applied:
+//   - Removed unused antd import (useSelection from antd/es/table)
+//   - zpRef cleanup prevents "joinRoom repeat" error on remount
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect, useRef } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
-import useSelection from "antd/es/table/hooks/useSelection";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/redux/userSlice";
 
-const ZegoMeeting = ({ zegoToken }: { zegoToken: string }) => {
+export default function ZegoMeeting({ zegoToken }: { zegoToken: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const zpRef = useRef<any>(null); // To store the Zego instance
+  const zpRef = useRef<any>(null);
   const user = useSelector(selectUser);
 
   useEffect(() => {
@@ -18,41 +29,45 @@ const ZegoMeeting = ({ zegoToken }: { zegoToken: string }) => {
         const decodedString = atob(zegoToken);
         const { appID, roomID, token } = JSON.parse(decodedString);
 
-        // Use the ID from your token logic
+        console.log("Decoded token:", { appID, roomID, token: token?.substring(0, 10) });
+console.log("Token starts with 04:", token?.startsWith("04"));
+console.log("Token length:", token?.length);
+  
+
         const kitToken = ZegoUIKitPrebuilt.generateKitTokenForProduction(
           Number(appID),
           token,
           roomID,
-          String(user?.id), // Or pass the actual logged-in user ID here
-          "User_" + Math.floor(Math.random() * 100)
+          String(user?.id),
+          user?.name ?? `User_${Math.floor(Math.random() * 1000)}`
         );
 
         const zp = ZegoUIKitPrebuilt.create(kitToken);
-        zpRef.current = zp; // Save instance to ref
+        zpRef.current = zp;
 
-      zp.joinRoom({
-  container: containerRef.current,
-  scenario: {
-    mode: ZegoUIKitPrebuilt.VideoConference,
-    config: {
-      role: ZegoUIKitPrebuilt.Host, // Ensures the user has permissions to publish
-    },
-  },
-  showPreJoinView: true,           // Keeps the "Check Camera" screen
-  turnOnCameraWhenJoining: true,    // Explicitly try to turn on
-  turnOnMicrophoneWhenJoining: true, 
-  showMyCameraToggleButton: true,   // Show the button in the UI
-  showMyMicrophoneToggleButton: true,
-  showAudioVideoSettingsButton: true,
-});
-      } catch (error) {
-        console.error("Zego Initialization Error:", error);
+        zp.joinRoom({
+          container: containerRef.current,
+          scenario: {
+            mode: ZegoUIKitPrebuilt.VideoConference,
+            config: {
+              role: ZegoUIKitPrebuilt.Host,
+            },
+          },
+          showPreJoinView: true,
+          turnOnCameraWhenJoining: true,
+          turnOnMicrophoneWhenJoining: true,
+          showMyCameraToggleButton: true,
+          showMyMicrophoneToggleButton: true,
+          showAudioVideoSettingsButton: true,
+        });
+      } catch (err) {
+        console.error("Zego initialization error:", err);
       }
     };
 
     initMeeting();
 
-    // CLEANUP: This stops the "joinRoom repeat" error
+    // Cleanup — prevents "joinRoom repeat" error on React remount
     return () => {
       if (zpRef.current) {
         zpRef.current.destroy();
@@ -61,7 +76,10 @@ const ZegoMeeting = ({ zegoToken }: { zegoToken: string }) => {
     };
   }, [zegoToken]);
 
-  return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
-};
-
-export default ZegoMeeting;
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: "100vw", height: "100vh" }}
+    />
+  );
+}

@@ -1,8 +1,35 @@
 "use client";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOME PAGE — Delma Health Platform
+//
+// Sections:
+//   1. Hero — headline + CTA + illustration
+//   2. How It Works — 4-step process with icons
+//   3. Common Health Concerns — horizontal swiper with category cards
+//   4. Benefits of Online Consultation — feature grid
+//   5. FAQs — accordion
+//
+// All data is defined as constants at the top for easy editing.
+// No API calls on this page — it's purely static/marketing content.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import Image from "next/image";
-import homeImg from "../public/images/img1.png";
+import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { FreeMode, Pagination } from "swiper/modules";
+import {
+  ArrowRight, Check, MapPin, FileText,
+  Video, ShoppingBag, Shield, Clock,
+  Star, ChevronDown, ChevronUp, Stethoscope,
+  Heart, Brain, Pill
+} from "lucide-react";
+import { useState } from "react";
+
 import WidthWrapper from "@/components/WidthWrapper";
 import { Button } from "@/components/ui/button";
+
+import homeImg from "../public/images/img1.png";
 import h1img from "../public/images/h1.jpeg";
 import h2img from "../public/images/h2.jpeg";
 import h3img from "../public/images/h3.jpeg";
@@ -10,468 +37,468 @@ import h4img from "../public/images/h4.jpeg";
 import h5img from "../public/images/h5.jpeg";
 import h6img from "../public/images/h6.jpeg";
 import h7img from "../public/images/h7.jpeg";
-import h8img from "../public/images/h8.jpeg";
-import { CiLocationArrow1 } from "react-icons/ci";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { IoDocumentOutline } from "react-icons/io5";
-import { CiShoppingCart } from "react-icons/ci";
-import { FcDocument } from "react-icons/fc";
+
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/free-mode";
-import { FreeMode, Pagination } from "swiper/modules";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  Check,
-  TicketCheck,
-} from "lucide-react";
-import { CiChat1 } from "react-icons/ci";
-import Link from "next/link";
 
-const healthConcernsData = [
-  {
-    title: "Cold & Cough",
-    price: 399,
-    img: h1img,
-  },
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS — edit all content here, no need to touch JSX
+// ─────────────────────────────────────────────────────────────────────────────
 
-  {
-    title: "Period Problems?",
-    price: 599,
-    img: h2img,
-  },
-  {
-    title: "Skin Problems?",
+const HEALTH_CONCERNS = [
+  { title: "Cold & Cough", price: 399, img: h1img },
+  { title: "Period Problems", price: 599, img: h2img },
+  { title: "Skin Problems", price: 340, img: h3img },
+  { title: "Depression & Anxiety", price: 499, img: h4img },
+  { title: "Stomach Problems", price: 299, img: h5img },
+  { title: "Weight Management", price: 350, img: h6img },
+  { title: "Child Health", price: 599, img: h7img },
+];
 
-    price: 340,
-    img: h3img,
+// 4-step process shown in "How it Works" section
+const HOW_IT_WORKS = [
+  {
+    icon: <MapPin size={24} className="text-[#78355b]" />,
+    step: "01",
+    title: "Find a Doctor",
+    desc: "Browse verified specialists by condition or use our AI symptom checker to find the right doctor.",
   },
   {
-    title: "Deprecession or anxiety",
-    price: 499,
-    img: h4img,
+    icon: <FileText size={24} className="text-[#78355b]" />,
+    step: "02",
+    title: "Upload Reports",
+    desc: "Share your lab reports and medical documents securely before the consultation.",
   },
   {
-    title: "Stomach Problems?",
-    price: 299,
-    img: h5img,
+    icon: <Video size={24} className="text-[#78355b]" />,
+    step: "03",
+    title: "Video Consultation",
+    desc: "Connect with your doctor via encrypted HD video call at your scheduled time.",
   },
   {
-    title: "Want to lose weight?",
-    price: 350,
-    img: h6img,
-  },
-  {
-    title: "Kids Probems",
-    price: 599,
-    img: h7img,
+    icon: <ShoppingBag size={24} className="text-[#78355b]" />,
+    step: "04",
+    title: "Get Medicines",
+    desc: "Order prescribed medications directly from our medical store with doorstep delivery.",
   },
 ];
-const settings = {
-  dots: false,
-  // infinite: true,
-  // speed: 500,
-  slidesToShow: 5,
-  slidesToScroll: 1, // Corrected typo here
-};
+
+const BENEFITS = [
+  {
+    icon: <Clock size={20} className="text-[#78355b]" />,
+    title: "Consult 24x7",
+    desc: "Connect instantly with specialists round the clock or schedule at your convenience.",
+  },
+  {
+    icon: <Stethoscope size={20} className="text-[#78355b]" />,
+    title: "Verified Doctors",
+    desc: "Every doctor is manually verified with credentials, registrations, and certifications.",
+  },
+  {
+    icon: <Shield size={20} className="text-[#78355b]" />,
+    title: "100% Private",
+    desc: "AES-256 encrypted consultations. Your medical data is never shared without consent.",
+  },
+  {
+    icon: <Star size={20} className="text-[#78355b]" />,
+    title: "Clinic Experience",
+    desc: "HD video calls with prescription delivery and structured follow-up care.",
+  },
+  {
+    icon: <Heart size={20} className="text-[#78355b]" />,
+    title: "Free Follow-up",
+    desc: "Get a valid digital prescription with a 7-day free follow-up for clarifications.",
+  },
+  {
+    icon: <Brain size={20} className="text-[#78355b]" />,
+    title: "AI Symptom Check",
+    desc: "Describe your symptoms in plain English — our AI recommends the right specialist.",
+  },
+];
+
+const FAQS = [
+  {
+    q: "What is online doctor consultation?",
+    a: "Online doctor consultation connects patients and doctors virtually. It's a convenient way to get medical advice using Delma's platform — no travel required, same quality of care.",
+  },
+  {
+    q: "Are the doctors on Delma qualified?",
+    a: "Yes. Every doctor goes through a strict manual verification process where our team checks necessary documents, medical registrations, and certifications before they can practice on Delma.",
+  },
+  {
+    q: "Is online consultation safe and secure?",
+    a: "Absolutely. All consultations are protected with AES-256 encryption and our platform is compliant with industry privacy standards. Your health data is never shared without your consent.",
+  },
+  {
+    q: "What if I don't get a response from a doctor?",
+    a: "In the unlikely event that a doctor doesn't respond within the promised time, you are entitled to a 100% refund — no questions asked.",
+  },
+  {
+    q: "How do I book an appointment?",
+    a: "Select a doctor from our listings or use the AI symptom checker, pick an available time slot, complete payment via Razorpay, and you're confirmed. The whole process takes under 2 minutes.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN HOME PAGE COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Home() {
   return (
-    <div className="pb-24">
-      <div className="bg-[#f7e8e6] h-[70%]  md:h-[50%]">
-        <WidthWrapper className="flex pt-12 md:pt-0">
-          <div className="flex  mt-24 justify-center items-start flex-col m-6 md:flex-1 md:flex  md:flex-col">
-            <p className="text-2xl items-start font-semibold text-gray-600 md:text-3xl">
-              Medical Care from Comfort of Your Home <br />
-              Online Doctor Consultation
+    <div className="pb-24 bg-white">
+
+      {/* ── SECTION 1: HERO ── */}
+      <HeroSection />
+
+      {/* ── SECTION 2: HOW IT WORKS ── */}
+      <HowItWorksSection />
+
+      {/* ── SECTION 3: HEALTH CONCERNS SWIPER ── */}
+      <HealthConcernsSection />
+
+      {/* ── SECTION 4: BENEFITS ── */}
+      <BenefitsSection />
+
+      {/* ── SECTION 5: FAQs ── */}
+      <FaqSection />
+
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO SECTION
+// Split layout: left = headline + CTA, right = illustration
+// ─────────────────────────────────────────────────────────────────────────────
+
+function HeroSection() {
+  return (
+    <div className="bg-gradient-to-br from-[#fdf0ee] via-[#f9e4e8] to-[#fdf0ee] overflow-hidden">
+      <WidthWrapper>
+        <div className="flex flex-col md:flex-row items-center min-h-[540px] py-16 gap-8">
+
+          {/* Left: Text content */}
+          <div className="flex-1 flex flex-col items-start gap-6">
+            {/* Pill badge */}
+            <span className="inline-flex items-center gap-1.5 bg-[#78355b]/10 text-[#78355b] text-xs font-semibold px-3 py-1.5 rounded-full">
+              <Pill size={12} />
+              Trusted by 50,000+ patients
+            </span>
+
+            <h1 className="text-3xl md:text-5xl font-bold text-gray-800 leading-tight">
+              Medical Care from the{" "}
+              <span className="text-[#78355b]">Comfort</span>{" "}
+              of Your Home
+            </h1>
+
+            <p className="text-gray-500 text-sm md:text-base leading-relaxed max-w-md">
+              Delma connects you with verified specialists for secure video
+              consultations, document sharing, and prescription delivery —
+              anytime, anywhere.
             </p>
-            <p className="mt-4 text-sm  text-gray-400 tracking-wide">
-              Welcome to Delma, where healthcare meets convenience and
-              accessibility at your fingertips. Our platform revolutionizes the
-              traditional doctor-patient interaction by offering seamless online
-              consultations with expert physicians, anytime and anywhere.
-            </p>
-            <div className="w-full">
-              <Link href={"/finddoc"}>
-                <Button className="w-[50%] mt-8  bg-[#78355B] hover:bg-[#78355B] hover:opacity-95">
-                  Check out doctors
+
+            {/* Stats row */}
+            <div className="flex gap-6">
+              {[
+                { value: "500+", label: "Doctors" },
+                { value: "50K+", label: "Patients" },
+                { value: "4.8★", label: "Rating" },
+              ].map(stat => (
+                <div key={stat.label}>
+                  <p className="text-xl font-bold text-[#78355b]">{stat.value}</p>
+                  <p className="text-xs text-gray-400">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA buttons */}
+            <div className="flex gap-3 flex-wrap">
+              <Link href="/finddoc">
+                <Button className="bg-[#78355b] hover:bg-[#5e2947] text-white px-6 py-2.5 rounded-xl flex items-center gap-2">
+                  Find a Doctor <ArrowRight size={16} />
+                </Button>
+              </Link>
+              <Link href="/finddoc">
+                <Button
+                  variant="outline"
+                  className="border-[#78355b] text-[#78355b] hover:bg-[#78355b]/5 px-6 py-2.5 rounded-xl"
+                >
+                  Try AI Symptom Check
                 </Button>
               </Link>
             </div>
           </div>
-          <div className=" hidden md:block md:flex-1">
+
+          {/* Right: Illustration — hidden on mobile */}
+          <div className="flex-1 hidden md:flex justify-center items-end">
             <Image
               src={homeImg}
-              alt=""
-              height={600}
-              width={700}
-              className="mt-28"
+              alt="Doctor consultation illustration"
+              height={480}
+              width={520}
+              className="object-contain drop-shadow-xl"
+              priority
             />
           </div>
-        </WidthWrapper>
-      </div>
-      <div>
-        <WidthWrapper className="mt-12 ">
-          <p className="text-3xl text-gray-700 font-[500] text-center">
-            How it works
-          </p>
-          <div className=" mt-12 h-[600px] md:h-[200px] w-[80%] mx-auto    ">
-            <div className="flex flex-col md:flex-row justify-between items-center  h-full ">
-              <div className=" w-[250px] ">
-                <div className="h-[60px] mx-auto w-[60px] flex items-center justify-center bg-[#F0EFF4] rounded-full">
-                  {" "}
-                  <CiLocationArrow1 size={30} />
-                </div>
-                <p className="text-[12px] mt-4 text-gray-500 tracking-wide">
-                  Select doctor according to illness and book an Appoitment
-                </p>
-              </div>
-              <div>
-                <div className="h-[60px] mx-auto w-[60px] flex items-center justify-center bg-[#F0EFF4] rounded-full">
-                  {" "}
-                  <FcDocument size={30} />
-                </div>
-                <p className="text-[12px] mt-4 text-gray-500 tracking-wide">
-                  {" "}
-                  Upload lab tests reports
-                </p>
-              </div>
-              <div>
-                <div className="h-[60px] mx-auto w-[60px] flex items-center justify-center bg-[#F0EFF4] rounded-full">
-                  {" "}
-                  <CiChat1 size={30} />
-                </div>
-                <p className="text-[12px] mt-4 text-gray-500 tracking-wide">
-                  {" "}
-                  Audio/ video call with a doctor
-                </p>
-              </div>
-              <div>
-                <div className="h-[60px] mx-auto w-[60px] flex items-center justify-center bg-[#F0EFF4] rounded-full">
-                  {" "}
-                  <CiShoppingCart size={30} />
-                </div>
-                <p className="text-[12px] mt-4 text-gray-500 tracking-wide">
-                  {" "}
-                  Buy Madication from our online store
-                </p>
-              </div>
-            </div>
-          </div>
-        </WidthWrapper>
-      </div>
-      <div className="mt-24">
-        <WidthWrapper>
-          <div className="mt-12">
-            <p className="text-3xl font-[500] text-gray-700">
-              Common Health Concerns
-            </p>
 
-            <Swiper
-              breakpoints={{
-                340: {
-                  slidesPerView: 2,
-                  spaceBetween: 15,
-                },
-                700: {
-                  slidesPerView: 5,
-                  spaceBetween: 15,
-                },
-              }}
-              freeMode={true}
-              pagination={{
-                clickable: true,
-              }}
-              modules={[FreeMode, Pagination]}
-              className="w-full mt-6   "
-            >
-              {healthConcernsData.map((item) => (
-                <SwiperSlide key={item.title}>
-                  <div className="flex flex-col  group relative shadow-md mb-12  rounded-md  h-[200px] w-[180px]  md:h-[280px] md:w-[250px]  overflow-hidden cursor-pointer">
-                    <div className="absolute inset-0 bg-cover bg-center" />
-                    <div className="absolute inset-0  group-hover:bg-gray-50" />
-                    <div className="relative flex flex-col ">
-                      <Image
-                        src={item.img}
-                        alt=""
-                        height={100}
-                        width={100}
-                        className=" w-full"
-                      />
-                      <p className="ml-2 mt-4 text-lg text-gray-500">
-                        {item.title}{" "}
-                      </p>
-                      <p className="ml-2  text-sm font-bold text-gray-600">
-                        ₹{item.price}{" "}
-                      </p>
-                      <button className="flex items-center gap-2 ml-2 mt-4 text-[#cd5555]">
-                        Book Appoitment <ArrowRight />{" "}
-                      </button>
-                    </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        </WidthWrapper>
-      </div>
-      <div className="mt-12">
-        <OnlineConsulting />
-      </div>
-      <div className="mt-24 w-full">
-        <FAQs />
-      </div>
+        </div>
+      </WidthWrapper>
     </div>
   );
 }
-const onlineConsultingData = [
-  {
-    title: "Consult Top Doctors 24x7",
-    desc: "Connect instantly with a 24x7 specialist or choose to video visit a particular doctor.",
-  },
-  {
-    title: "Convenient and Easy",
-    desc: "Start an instant consultation within 2 minutes or do video consultation at the scheduled time.",
-  },
-  {
-    title: "100% Safe Consultations",
-    desc: "Be assured that your online consultation will be fully private and secured.",
-  },
-  {
-    title: "Similar Clinic Experience",
-    desc: "Experience clinic-like consultation through a video call with the doctor. Video consultation is available only on the Practo app.",
-  },
-  {
-    title: "Free Follow-up",
-    desc: "Get a valid digital prescription and a 7-day, free follow-up for further clarifications",
-  },
-];
 
-function OnlineConsulting() {
+// ─────────────────────────────────────────────────────────────────────────────
+// HOW IT WORKS SECTION
+// 4 numbered steps in a horizontal row (vertical on mobile)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function HowItWorksSection() {
   return (
-    <>
+    <section className="py-20 bg-white">
       <WidthWrapper>
-        <p className="text-3xl font-[500] text-gray-700">
-          Benefits of Online Consultation
-        </p>
-        <div className="w-[90%] mt-6 mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border p-6 ">
-          {onlineConsultingData.map((item, idx) => (
-            <div className=" mt-4 " key={idx}>
-              <p className="font-semibold text-lg text-gray-600 flex gap-2 items-center">
-                <Check />
+        {/* Section header */}
+        <div className="text-center mb-14">
+          <p className="text-xs font-semibold text-[#78355b] uppercase tracking-widest mb-2">
+            Simple Process
+          </p>
+          <h2 className="text-3xl font-bold text-gray-800">How It Works</h2>
+          <p className="text-gray-400 text-sm mt-2 max-w-md mx-auto">
+            From finding a doctor to getting your prescription — everything in 4 easy steps.
+          </p>
+        </div>
 
-                {item.title}
-              </p>
-              <p className="text-sm mt-2 text-gray-400 tracking-wide">
-                {item.desc}
-              </p>
+        {/* Steps grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+          {/* Connector line — desktop only */}
+          <div className="hidden md:block absolute top-10 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-[#78355b]/20 to-transparent" />
+
+          {HOW_IT_WORKS.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-[#78355b]/5 transition-colors group"
+            >
+              {/* Step number + icon */}
+              <div className="relative mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#78355b]/10 flex items-center justify-center group-hover:bg-[#78355b]/20 transition-colors">
+                  {item.icon}
+                </div>
+                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#78355b] text-white text-xs font-bold flex items-center justify-center">
+                  {item.step}
+                </span>
+              </div>
+
+              <h3 className="font-semibold text-gray-800 mb-2">{item.title}</h3>
+              <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
       </WidthWrapper>
-    </>
+    </section>
   );
 }
 
-function FAQs() {
+// ─────────────────────────────────────────────────────────────────────────────
+// HEALTH CONCERNS SECTION
+// Horizontal swiper showing condition cards with price and book CTA
+// ─────────────────────────────────────────────────────────────────────────────
+
+function HealthConcernsSection() {
   return (
-    <>
-      <WidthWrapper className="w=[80%] mx-auto">
-        <p className="text-3xl font-[500] text-gray-700">FAQs</p>
-        <div className="flow-root mt-6">
-          <div className="-my-8 divide-y divide-gray-100">
-            <details
-              className="group py-8 [&_summary::-webkit-details-marker]:hidden"
-              open
-            >
-              <summary className="flex cursor-pointer items-center justify-between text-gray-900">
-                <h2 className="text-lg text-gray-500  font-medium">
-                  What is online doctor consultation?
-                </h2>
-
-                <span className="relative size-5 shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-100 group-open:opacity-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-0 group-open:opacity-100"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </span>
-              </summary>
-
-              <p className="mt-4 leading-relaxed text-gray-400">
-                Online doctor consultation or online medical consultation is a
-                method to connect patients and doctors virtually. It is a
-                convenient and easy way to get online doctor advice using doctor
-                apps or telemedicine apps or platforms, and the internet.
-              </p>
-            </details>
-
-            <details className="group py-8 [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 text-gray-900">
-                <h2 className="text-lg  text-gray-500 font-medium">
-                  Are your online doctors qualified?
-                </h2>
-
-                <span className="relative size-5 shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-100 group-open:opacity-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-0 group-open:opacity-100"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </span>
-              </summary>
-
-              <p className="mt-4 leading-relaxed text-gray-400">
-                We follow a strict verification process for every doctor
-                providing online medical services on Practo. Our team manually
-                verifies necessary documents, registrations, and certifications
-                for every doctor.
-              </p>
-            </details>
-
-            <details className="group py-8 [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 text-gray-900">
-                <h2 className="text-lg  text-gray-500 font-medium">
-                  Is online doctor consultation safe and secured on Delma?
-                </h2>
-
-                <span className="relative size-5 shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-100 group-open:opacity-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-0 group-open:opacity-100"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </span>
-              </summary>
-
-              <p className="mt-4 leading-relaxed text-gray-400">
-                The privacy of our patients is critical to us, and thus, we are
-                compliant with industry standards like ISO 27001. Rest assured
-                that your online consultation with a doctor is completely safe
-                and secured with 256-bit encryption.
-              </p>
-            </details>
-
-            <details className="group py-8 [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 text-gray-900">
-                <h2 className="text-lg  text-gray-500 font-medium">
-                  What happens if I don’t get a response from a doctor?
-                </h2>
-
-                <span className="relative size-5 shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-100 group-open:opacity-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 size-5 opacity-0 group-open:opacity-100"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </span>
-              </summary>
-
-              <p className="mt-4 text-gray-400 leading-relaxed ">
-                In the unlikely event that an online doctor does not respond,
-                you will be entitled to a 100% refund.
-              </p>
-            </details>
+    <section className="py-16 bg-gray-50">
+      <WidthWrapper>
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-xs font-semibold text-[#78355b] uppercase tracking-widest mb-1">
+              Browse by Condition
+            </p>
+            <h2 className="text-3xl font-bold text-gray-800">Common Health Concerns</h2>
           </div>
+          <Link href="/finddoc">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#78355b] text-[#78355b] hover:bg-[#78355b]/5 rounded-xl hidden md:flex items-center gap-1"
+            >
+              View all <ArrowRight size={14} />
+            </Button>
+          </Link>
+        </div>
+
+        {/* Swiper — 2 cards on mobile, 5 on desktop */}
+        <Swiper
+          breakpoints={{
+            340: { slidesPerView: 2, spaceBetween: 12 },
+            700: { slidesPerView: 4, spaceBetween: 16 },
+            1024: { slidesPerView: 5, spaceBetween: 16 },
+          }}
+          freeMode={true}
+          pagination={{ clickable: true }}
+          modules={[FreeMode, Pagination]}
+          className="w-full pb-10"
+        >
+          {HEALTH_CONCERNS.map((item, idx) => (
+            <SwiperSlide key={idx}>
+              <Link href="/finddoc">
+                <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100">
+                  {/* Condition image */}
+                  <div className="overflow-hidden h-36 md:h-44">
+                    <Image
+                      src={item.img}
+                      alt={item.title}
+                      width={250}
+                      height={176}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+
+                  {/* Card content */}
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-gray-700 leading-tight mb-1">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-gray-400 mb-2">
+                      Starts at <span className="font-bold text-gray-700">₹{item.price}</span>
+                    </p>
+                    <span className="text-xs text-[#78355b] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
+                      Book now <ArrowRight size={12} />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </WidthWrapper>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BENEFITS SECTION
+// 6-card grid highlighting platform advantages
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BenefitsSection() {
+  return (
+    <section className="py-20 bg-white">
+      <WidthWrapper>
+        <div className="text-center mb-14">
+          <p className="text-xs font-semibold text-[#78355b] uppercase tracking-widest mb-2">
+            Why Choose Delma
+          </p>
+          <h2 className="text-3xl font-bold text-gray-800">
+            Benefits of Online Consultation
+          </h2>
+          <p className="text-gray-400 text-sm mt-2 max-w-md mx-auto">
+            Everything you need for quality healthcare — without leaving your home.
+          </p>
+        </div>
+
+        {/* Benefits grid — 1 col mobile, 2 tablet, 3 desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {BENEFITS.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex gap-4 p-5 rounded-2xl border border-gray-100 hover:border-[#78355b]/20 hover:bg-[#78355b]/5 transition-all group"
+            >
+              {/* Icon box */}
+              <div className="w-10 h-10 rounded-xl bg-[#78355b]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#78355b]/20 transition-colors">
+                {item.icon}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Check size={14} className="text-[#78355b]" />
+                  <h3 className="font-semibold text-gray-800 text-sm">{item.title}</h3>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA banner */}
+        <div className="mt-12 bg-gradient-to-r from-[#78355b] to-[#a0526e] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h3 className="text-xl font-bold text-white mb-1">
+              Ready to consult a doctor?
+            </h3>
+            <p className="text-white/70 text-sm">
+              Get started in under 2 minutes. No appointment needed for instant consultations.
+            </p>
+          </div>
+          <Link href="/finddoc">
+            <Button className="bg-white text-[#78355b] hover:bg-gray-100 px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 flex-shrink-0">
+              Find a Doctor Now <ArrowRight size={16} />
+            </Button>
+          </Link>
         </div>
       </WidthWrapper>
-    </>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAQ SECTION
+// Accordion — click to expand/collapse each question
+// Uses React state instead of native <details> for consistent animation
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FaqSection() {
+  // Track which FAQ item is open — only one open at a time
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
+
+  const toggle = (idx: number) => {
+    setOpenIdx(prev => (prev === idx ? null : idx));
+  };
+
+  return (
+    <section className="py-20 bg-gray-50">
+      <WidthWrapper>
+        <div className="text-center mb-14">
+          <p className="text-xs font-semibold text-[#78355b] uppercase tracking-widest mb-2">
+            Got Questions?
+          </p>
+          <h2 className="text-3xl font-bold text-gray-800">
+            Frequently Asked Questions
+          </h2>
+        </div>
+
+        {/* FAQ list — max width for readability */}
+        <div className="max-w-2xl mx-auto space-y-3">
+          {FAQS.map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+            >
+              {/* Question row — clickable */}
+              <button
+                onClick={() => toggle(idx)}
+                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+              >
+                <span className="font-medium text-gray-800 text-sm pr-4">
+                  {item.q}
+                </span>
+                {openIdx === idx ? (
+                  <ChevronUp size={18} className="text-[#78355b] flex-shrink-0" />
+                ) : (
+                  <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />
+                )}
+              </button>
+
+              {/* Answer — shown when open */}
+              {openIdx === idx && (
+                <div className="px-6 pb-5">
+                  <p className="text-sm text-gray-500 leading-relaxed border-t border-gray-100 pt-4">
+                    {item.a}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </WidthWrapper>
+    </section>
   );
 }

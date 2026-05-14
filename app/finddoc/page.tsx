@@ -1,137 +1,127 @@
 "use client";
-import { MdDateRange } from "react-icons/md";
-import { TimePicker } from "antd";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOCTORS PAGE — Delma Health Platform
+//
+// This page handles:
+//   1. Fetching and displaying all approved doctors
+//   2. AI-powered symptom checker (Groq AI via /api/v1/ai/symptom-check)
+//   3. Manual search with debouncing (500ms delay)
+//   4. Filter by specialization, gender, experience sort
+//   5. Date picker for slot availability check
+//   6. Razorpay payment flow for appointment booking
+//   7. Slot selection modal
+//   8. Pagination (6 doctors per page)
+//
+// Key state:
+//   docs            — currently displayed doctors (may be filtered/sorted)
+//   originalDocs    — unmodified full list, always used as filter source
+//   memoizedDocs    — memoized version of docs for performance
+//   availableSlots  — slots returned for a selected doctor+date
+//   selectedSlotId  — slot chosen by user
+//   activeDoctor    — doctor currently being booked
+//   aiResult        — AI symptom analysis result
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import WidthWrapper from "@/components/WidthWrapper";
-import { DatePicker } from "antd";
-import homeImg from "../../public/images/img2.svg";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Filter, FlaskConical, Loader2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import img3 from "../../public/images/img3.jpeg";
-// import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-// import TimePicker from "react-time-picker";
-// import "react-time-picker/dist/TimePicker.css";
 import { useSelector } from "react-redux";
-import { selectToken, selectUser } from "@/redux/userSlice";
-import { CiLocationOn, CiSearch } from "react-icons/ci";
-import { IoLanguageOutline } from "react-icons/io5";
-import { PiFlaskThin } from "react-icons/pi";
-import { PiMoneyThin } from "react-icons/pi";
-import helpImg from "../../public/images/helpimg.png";
-import "react-toastify/dist/ReactToastify.css";
-import Link from "next/link";
+import {
+  Brain, Filter, Loader2, MapPin, Clock,
+  IndianRupee, Search, X, ChevronLeft,
+  ChevronRight, Stethoscope, Calendar
+} from "lucide-react";
+
+import WidthWrapper from "@/components/WidthWrapper";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogHeader } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import axiosInstance from "../login/axiosInstance";
-import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import { selectToken, selectUser } from "@/redux/userSlice";
 
-const specializationData = [
-  "Orthopedics",
-  "Internal Medicine",
-  "Obstetrics and Gynecology",
-  "Dermatology",
-  "Pediatrics",
-  "Radiology",
-  "General Surgery",
-  "Ophthalmology",
+import homeImg from "../../public/images/img2.svg";
+import img3 from "../../public/images/img3.jpeg";
+import helpImg from "../../public/images/helpimg.png";
+import "react-datepicker/dist/react-datepicker.css";
+
+dayjs.extend(customParseFormat);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const POSTS_PER_PAGE = 6;
+const SEARCH_DEBOUNCE_MS = 500;
+const DATE_FORMAT = "YYYY-MM-DD";
+const RAZORPAY_KEY = "rzp_test_S9jVkGSiveLNXR"; // TODO: move to .env.local
+
+const SPECIALIZATIONS = [
+  "Orthopedics", "Internal Medicine", "Obstetrics and Gynecology",
+  "Dermatology", "Pediatrics", "Radiology", "General Surgery", "Ophthalmology",
 ];
-interface DoctorsProps {
-  id: string;
-  firstName: string;
-  address: string;
-  specialization: string;
-  languages: Array<string>;
-  feesPerCunsaltation: number;
-  experience: number;
+
+const FAQ_ITEMS = [
+  {
+    title: "Who is an orthopedist? What is the difference between an orthopedist and an orthopedic surgeon?",
+    desc: "An orthopedist specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise.",
+    show: false,
+  },
+  {
+    title: "How do I book an appointment on Delma?",
+    desc: "Select a doctor, choose your preferred date, check available slots, and complete payment via Razorpay. Your appointment is confirmed instantly.",
+    show: false,
+  },
+  {
+    title: "Is my medical data secure on Delma?",
+    desc: "Yes. All documents are stored with AES-256 encryption and accessed via time-limited presigned URLs. Your data is never shared without consent.",
+    show: false,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILITY FUNCTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getTodaysDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-const question = [
-  {
-    title:
-      "Who is an orthopedist? What is the difference between an orthopedist and an orthopedic surgeon?",
-    desc: "An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages.",
-    show: false,
-  },
-  {
-    title:
-      "Who is an orthopedist? What is the difference between an orthopedist and an orthopedic surgeon?",
-    desc: "An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages.",
-    show: false,
-  },
-  {
-    title:
-      "Who is an orthopedist? What is the difference between an orthopedist and an orthopedic surgeon?",
-    desc: "An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages An orthopedist is a doctor who specializes in the treatment of functional or congenital abnormalities of the musculoskeletal system. Treatment methods include surgery, medicines, physical therapy, bracing, and exercise. Originally, orthopedists focused on treating children with polio and other developmental defects, but now they address a wide range of musculoskeletal conditions in individuals of all ages.",
-    show: false,
-  },
-];
 
-export default function Page() {
-  const [fnq, setFnq] = useState(question);
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN PAGE COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const handleFNQ = (idx: number) => {
-    const updatedFnqs = [...fnq];
-    // Toggle the 'show' property of the question at the specified index
-    updatedFnqs[idx].show = !updatedFnqs[idx].show;
-    // Update the state with the modified array
-    setFnq(updatedFnqs);
-  };
-
+export default function DoctorsPage() {
   const token = useSelector(selectToken);
   const user = useSelector(selectUser);
   const currentUser = useSelector(selectUser);
   const { toast } = useToast();
 
+  // ── Doctor list state ──
   const [docs, setDocs] = useState<DoctorInputProps[]>([]);
-
+  // originalDocs stores the full unfiltered list.
+  // IMPORTANT: handleFilter always filters from originalDocs, never from docs.
+  // This prevents filter stacking — applying gender after specialization
+  // would otherwise filter an already-filtered list.
+  const [originalDocs, setOriginalDocs] = useState<DoctorInputProps[]>([]);
   const memoizedDocs = useMemo(() => docs, [docs]);
-  // const docs = useMemo(() => docs, [docs]);
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(new Date()); // State for date
-  const [selectedTime, setSelectedTime] = useState("12:00");
 
-  // state valiables for check avl btn dialogue
+  // ── Date selection state ──
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+
+  // ── Slot booking modal state ──
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
-  const [selectedSlotId, selectSelectedSlotId] = useState<number | null>(null);
-  const [activeDoctor, setActiveDoctor] = useState<{ id: Number, name: String, fees: number } | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [activeDoctor, setActiveDoctor] = useState<{ id: number; name: string; fees: number } | null>(null);
 
-
-
-  // AI Symptom Checker state
+  // ── AI Symptom Checker state ──
   const [symptoms, setSymptoms] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<{
@@ -140,399 +130,92 @@ export default function Page() {
     disclaimer: string;
   } | null>(null);
 
-
-
-  const onChange = (time: any) => {
-    setSelectedTime(time);
-  };
-
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axiosInstance.get("/api/users/doctors");
-        setDocs(response.data.data);
-        console.log("DOCTORS DATA:", response.data);
-      } catch (error) {
-        console.error("Error fetching doctors:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDoctors();
-  }, []);
-
-  // useEffect(() => {
-  //   const fetchDoctors = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const response = await axiosInstance.get(
-  //         "/api/users/doctors",{
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //           }
-  //         }
-  //       );
-
-  //       setDocs(response.data);
-  //       console.log("DOCTORS DATA:", response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching doctors:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchDoctors(); // Call the fetchDoctors function
-  // }, []);
-
-
-  const handleAvailabilityCheck = async (doctorId: number, firstName: String, singleDoctor: DoctorInputProps) => {
-    setIsLoading(true);
-    try {
-      const dateStr = startDate ? dayjs(startDate).format("YYYY-MM-DD") : getTodaysDate();
-      const res = await axiosInstance.get(`http://localhost:8089/api/v1/appointments/slots`, {
-        params: {
-          doctorId,
-          date: dateStr
-        }
-      });
-      const slots = res.data.data;
-      console.log("Available slots:", slots);
-      setAvailableSlots(slots);
-      setActiveDoctor({ id: doctorId, name: firstName, fees: singleDoctor.feesPerConsultation });
-      setIsSlotModalOpen(true);
-
-
-    } catch (err) {
-      console.log("ERROR IN availability CHECK", err);
-      toast({ variant: "destructive", title: "Error", description: "Could not fetch slots." });
-
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-
-  // const handleAvailabilityCheck = async (
-  //   date: Date | null,
-  //   time: string,
-  //   doctorId: number,
-  //   doctorInfo: string
-  // ) => {
-  //   try {
-  //     console.log("date now",date)
-  //     // Convert date to ISO string format
-  //     const isDate = date ? date.toISOString() : null;
-  //     console.log("date", isDate);
-  //     console.log("time", time);
-  //     const res = await axios.post(
-  //       "http://localhost:7003/api/v1/user/booking-availbility",
-  //       {
-  //         userId: currentUser?.id,
-  //         doctorId: doctorId,
-  //         doctorInfo,
-  //         userInfo: currentUser?.name,
-  //         date: isDate,
-  //         time,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-  //     const str = res.data.message;
-  //     console.log(str);
-  //     if (res.data.success === false) {
-  //       toast({
-  //         variant: "destructive",
-  //         title: "Status of your availability check",
-  //         description: str,
-  //       });
-  //     } else {
-  //       toast({
-  //         title: "Status of your availability check",
-  //         description: str,
-  //       });
-  //     }
-
-  //     console.log("RESPONSE OF CHECK FUNCTION", res);
-  //   } catch (err) {
-  //     console.log("ERROR IN availability CHECK", err);
-  //   }
-  // };
-
-  const loadRazorpayScript = async () => {
-    try {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      document.body.appendChild(script);
-    } catch (err) {
-      console.log("Failed to load razorpay script: ", err);
-    }
-  };
-
-  const makePayment = async () => {
-    try {
-
-      // 1. Call your new Payment Microservice (via Gateway)
-      // Replace URL with your actual API Gateway or Payment MS URL
-      const response = await axiosInstance.post(
-        "http://localhost:8089/api/v1/payments/create",
-        {
-          amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,
-          refId: `SLOT_${selectedSlotId}`,
-          sourceType: "APPOINTMENT"
-        }
-
-
-      );
-
-      // 2. Ensure script is loaded before opening modal
-      await loadRazorpayScript();
-
-      const options = {
-        key: "rzp_test_S9jVkGSiveLNXR", // Move this to .env.local
-        amount: activeDoctor?.fees ? activeDoctor.fees * 100 : 0,// Razorpay expects subunits (paise)
-        currency: "INR",
-        name: "Delma Health",
-        description: "Doctor Appointment Booking",
-        order_id: response.data.data, // The ID returned by your Java service
-        handler: async function (response: any) {
-          // 3. SUCCESS CALLBACK: Send to your MS for verification
-          console.log("Razorpay response:", response);
-          try {
-            const verifyRes = await axiosInstance.post(
-              "http://localhost:8089/api/v1/payments/verify",
-              {
-                orderId: response.razorpay_order_id,
-                paymentId: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              }
-            );
-
-            if (verifyRes.status === 200) {
-              toast({ description: "Payment Successful! Appointment Booked." });
-              // router.push("/bookings/success");
-              await handleBookAppointment();
-            }
-          } catch (err) {
-            toast({ variant: "destructive", description: "Verification Failed!" });
-          }
-        },
-        prefill: {
-          name: user?.name,
-          email: user?.email,
-
-        },
-        theme: { color: "#121212" },
-      };
-
-      const razor = new window.Razorpay(options);
-      razor.open();
-
-    } catch (error) {
-      console.error("Payment Initiation Error:", error);
-      toast({ variant: "destructive", description: "Could not initiate payment." });
-    }
-  }
-
-  const handleBookAppointment = async (
-    // date: Date | null,
-    // time: string,
-    // doctorId: number,
-    // doctorInfo: string
-  ) => {
-    if (!selectedSlotId || !activeDoctor) {
-      toast({ variant: "destructive", title: "Select a slot", description: "Please pick a time slot first." });
-      return;
-    }
-    try {
-
-      // Convert date to ISO string format
-      // const isDate = date ? date.toISOString() : null;
-
-      // const res = await axios.post(
-      //   "http://localhost:8089/api/v1/appointments/book",
-      //   {
-      //     userId: currentUser?.id,
-      //     doctorId: doctorId,
-      //     doctorInfo,
-      //     userInfo: currentUser?.name,
-      //     date: isDate,
-      //     time,
-      //     // status: "pending",
-      //     // roomId: generateUniqueString(),
-      //   },
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //     },
-
-      //   }
-
-      // );
-      const res = await axios.post(
-        `http://localhost:8089/api/v1/appointments/book`,
-        null, // No request body
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            userId: currentUser?.id,
-            doctorId: activeDoctor.id,
-            slotId: selectedSlotId,
-          },
-        }
-      );
-      const str = res.data.message;
-
-      if (res.data.success === false) {
-        toast({
-          variant: "destructive",
-          title: str,
-        });
-      } else {
-        toast({
-          title: str,
-        });
-      }
-
-      // alert(res.data.message);
-      console.log("RESPONSE OF booking appoitment FUNCTION", res);
-      setIsSlotModalOpen(false);
-
-    } catch (err) {
-      console.log("ERROR IN booking appointment CHECK", err);
-      toast({ variant: "destructive", title: "Error", description: "Connection error." });
-    }
-  };
-
-  // pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage, setPostsPerPage] = useState(6);
-  const lastPostIndex = currentPage * postsPerPage;
-  const firstPostIndex = lastPostIndex - postsPerPage;
-  const currentPosts = memoizedDocs.slice(firstPostIndex, lastPostIndex);
+  // ── Search state ──
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]); // State to hold the search results
-  type Timeout = NodeJS.Timeout | number | undefined;
-  // for search and debouncing queries
-  const [view, setView] = useState(false);
-  const searchTimeoutRef: MutableRefObject<Timeout | null> = useRef(null);
+  const [searchResults, setSearchResults] = useState<DoctorInputProps[]>([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Function to handle input box click
-  const handleInputClick = () => {
-    setView(true); // Show suggestions when input box is clicked
-  };
-
-  const handleSearchInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const inputValue = event.target.value;
-    setSearchQuery(inputValue.trim());
-  };
-
-  // Function to fetch search results
-  useEffect(() => {
-    // Clear the previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set a new timeout to debounce the search term
-    searchTimeoutRef.current = setTimeout(() => {
-      console.log(searchQuery);
-      if (searchQuery.trim() !== "") {
-        try {
-          const fetchSearchResults = async () => {
-            const response = await axiosInstance.get(
-              `http://localhost:8089/api/v1/doctor/search/${searchQuery}`
-            );
-            setSearchResults(response.data.data);
-            console.log("first", response.data.data);
-          };
-
-          fetchSearchResults();
-        } catch (error) {
-          console.error("Error fetching search results:", error);
-        }
-      } else {
-        setSearchResults([]); // Clear search results when search term is empty
-      }
-    }, 500); // Adjust the debounce delay as needed
-
-    // Cleanup function to clear timeout when search term changes
-    return () => {
-      if (searchTimeoutRef.current !== null) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element | null; // Narrow down the type to Element or null
-      if (view && target && !target.closest(".search-container")) {
-        setView(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [view]);
-  const dateFormat = "YYYY-MM-DD";
-  const timeFormat = "HH:mm";
-
-  // State variables to hold the selected filter options
+  // ── Filter state ──
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
   const [selectedSortBy, setSelectedSortBy] = useState("");
 
-  // Function to handle filtering based on selected options
-  const handleFilter = () => {
-    setIsLoading(true);
-    // Implement your filtering logic here based on the selected options
-    let filteredDocs = memoizedDocs.slice();
-    console.log("first", filteredDocs);
+  // ── Pagination state ──
+  const [currentPage, setCurrentPage] = useState(1);
+  const lastIdx = currentPage * POSTS_PER_PAGE;
+  const firstIdx = lastIdx - POSTS_PER_PAGE;
+  const currentPosts = memoizedDocs.slice(firstIdx, lastIdx);
 
-    // Filter by specialization
-    console.log("spe", selectedSpecialization);
-    console.log("gender", selectedGender);
-    console.log("sorby", selectedSortBy);
-    if (selectedSpecialization !== "") {
-      filteredDocs = filteredDocs.filter(
-        (doc) => doc.specialization === selectedSpecialization
-      );
-    }
+  // ── FAQ state ──
+  const [faq, setFaq] = useState(FAQ_ITEMS);
 
-    // Filter by gender
-    if (selectedGender !== "") {
-      filteredDocs = filteredDocs.filter(
-        (doc) => doc.gender === selectedGender
-      );
-    }
+  // ── Hydration guard — prevents SSR/CSR mismatch with antd DatePicker ──
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
-    // Sort by experience
-    if (selectedSortBy === "experience-low-high") {
-      filteredDocs.sort((a, b) => a.experience - b.experience);
-    } else if (selectedSortBy === "experience-high-low") {
-      filteredDocs.sort((a, b) => b.experience - a.experience);
-    }
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    console.log("result", filteredDocs);
-    setDocs(filteredDocs);
-  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // DATA FETCHING
+  // ─────────────────────────────────────────────────────────────────────────
 
+  // Fetch all approved doctors on mount
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      setIsLoading(true);
+      try {
+        const res = await axiosInstance.get("/api/users/doctors");
+        setDocs(res.data.data);
+        setOriginalDocs(res.data.data); // Always save original for filter resets
+      } catch (err) {
+        console.error("Failed to fetch doctors:", err);
+        toast({ variant: "destructive", title: "Could not load doctors" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  // Debounced doctor search — waits 500ms after typing stops before calling API
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (searchQuery.trim() === "") {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        const res = await axiosInstance.get(`/api/v1/doctor/search/${searchQuery}`);
+        setSearchResults(res.data.data || []);
+      } catch (err) {
+        console.error("Search failed:", err);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery]);
+
+  // Close search dropdown when clicking outside the search container
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (showSearchDropdown && target && !target.closest(".search-container")) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showSearchDropdown]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AI SYMPTOM CHECKER
+  // Flow: user types symptoms → POST /api/v1/ai/symptom-check
+  //       → get specialization → GET /api/v1/doctor/search/{specialization}
+  //       → update doctor list
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleSymptomCheck = async () => {
     if (!symptoms.trim()) {
@@ -542,381 +225,534 @@ export default function Page() {
     setAiLoading(true);
     setAiResult(null);
     try {
-      // Step 1 — Call AI service
-      const aiResponse = await axiosInstance.post(
-        "http://localhost:8089/api/v1/ai/symptom-check",
-        { symptoms }
-      );
-      const result = aiResponse.data.data;
+      // Step 1: Ask AI for specialization recommendation
+      const aiRes = await axiosInstance.post("/api/v1/ai/symptom-check", { symptoms });
+      const result = aiRes.data.data;
       setAiResult(result);
 
-      // Step 2 — Search doctors by returned specialization
-      const doctorResponse = await axiosInstance.get(
-        `http://localhost:8089/api/v1/doctor/search/${result.specialization}`
-      );
-      const filteredDoctors = doctorResponse.data.data || [];
-      setDocs(filteredDoctors);
+      // Step 2: Filter doctors by returned specialization
+      const doctorRes = await axiosInstance.get(`/api/v1/doctor/search/${result.specialization}`);
+      const filtered = doctorRes.data.data || [];
+      setDocs(filtered);
       setCurrentPage(1);
 
       toast({
-        title: `Found ${filteredDoctors.length} ${result.specialization} specialists`,
+        title: `Found ${filtered.length} ${result.specialization} specialists`,
         description: result.message,
       });
-    } catch (error) {
-      console.error("AI symptom check failed:", error);
+    } catch (err) {
+      console.error("AI symptom check failed:", err);
       toast({
         variant: "destructive",
-        title: "AI service unavailable",
-        description: "Please try manual search instead.",
+        title: "AI unavailable",
+        description: "Try manual search instead.",
       });
     } finally {
       setAiLoading(false);
     }
   };
 
-  const [hydration, setHydration] = useState(false);
-  useEffect(() => {
-    setHydration(true);
-  }, []);
-  if (!hydration) return;
+  // Clears AI filter and restores original full doctor list
+  const handleClearAiFilter = async () => {
+    const res = await axiosInstance.get("/api/users/doctors");
+    setDocs(res.data.data);
+    setOriginalDocs(res.data.data); // Reset originalDocs too in case AI changed it
+    setAiResult(null);
+    setSymptoms("");
+    setCurrentPage(1);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FILTER & SORT
+  //
+  // CRITICAL: Always filter from originalDocs, NEVER from memoizedDocs.
+  // If we filter from memoizedDocs, applying a second filter stacks on top
+  // of the first (e.g. Male Cardiologists → then filter Female = empty list).
+  // originalDocs is always the complete unmodified list.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleFilter = () => {
+    setIsLoading(true);
+    let filtered = [...originalDocs]; // ← Always start from the full unfiltered list
+
+    if (selectedSpecialization) {
+      filtered = filtered.filter(d => d.specialization === selectedSpecialization);
+    }
+    if (selectedGender) {
+      filtered = filtered.filter(d => d.gender === selectedGender);
+    }
+    if (selectedSortBy === "experience-low-high") {
+      filtered.sort((a, b) => a.experience - b.experience);
+    } else if (selectedSortBy === "experience-high-low") {
+      filtered.sort((a, b) => b.experience - a.experience);
+    }
+
+    setTimeout(() => setIsLoading(false), 300);
+    setDocs(filtered);
+    setCurrentPage(1);
+  };
+
+  // Resets all filters and restores the full doctor list
+  const handleClearFilters = () => {
+    setDocs(originalDocs);
+    setSelectedSpecialization("");
+    setSelectedGender("");
+    setSelectedSortBy("");
+    setCurrentPage(1);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SLOT AVAILABILITY CHECK
+  // Fetches available time slots for a given doctor and date
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleAvailabilityCheck = async (
+    doctorId: number,
+    firstName: string,
+    doctor: DoctorInputProps
+  ) => {
+    setIsLoading(true);
+    try {
+      const dateStr = startDate ? dayjs(startDate).format(DATE_FORMAT) : getTodaysDate();
+      const res = await axiosInstance.get("/api/v1/appointments/slots", {
+        params: { doctorId, date: dateStr },
+      });
+      setAvailableSlots(res.data.data || []);
+      setActiveDoctor({ id: doctorId, name: firstName, fees: doctor.feesPerConsultation });
+      setSelectedSlotId(null); // Clear any previously selected slot
+      setIsSlotModalOpen(true);
+    } catch (err) {
+      console.error("Slot fetch failed:", err);
+      toast({ variant: "destructive", title: "Could not fetch slots" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RAZORPAY PAYMENT FLOW
+  //
+  // 1. POST /api/v1/payments/create  → get Razorpay order ID
+  // 2. Open Razorpay checkout modal
+  // 3. On payment success → POST /api/v1/payments/verify (signature check)
+  // 4. On verification success → POST /api/v1/appointments/book
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const loadRazorpayScript = () => {
+    return new Promise<void>((resolve) => {
+      // Avoid injecting the script multiple times
+      if (document.querySelector('script[src*="razorpay"]')) {
+        resolve();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve();
+      document.body.appendChild(script);
+    });
+  };
+
+  const makePayment = async () => {
+    if (!selectedSlotId || !activeDoctor) return;
+
+    try {
+      // Step 1: Create Razorpay order on backend
+      const createRes = await axiosInstance.post("/api/v1/payments/create", {
+        amount: activeDoctor.fees * 100, // Razorpay expects paise (₹1 = 100 paise)
+        refId: `SLOT_${selectedSlotId}`,
+        sourceType: "APPOINTMENT",
+      });
+      const rzpOrderId = createRes.data.data;
+
+      // Step 2: Open Razorpay modal
+      await loadRazorpayScript();
+
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: activeDoctor.fees * 100,
+        currency: "INR",
+        name: "Delma Health",
+        description: `Consultation with Dr. ${activeDoctor.name}`,
+        order_id: rzpOrderId,
+        handler: async (response: any) => {
+          // Step 3: Verify payment signature
+          try {
+            const verifyRes = await axiosInstance.post("/api/v1/payments/verify", {
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+            if (verifyRes.status === 200) {
+              toast({ description: "Payment successful! Booking your appointment..." });
+              await handleBookAppointment(); // Step 4: Book the slot
+            }
+          } catch (err) {
+            toast({ variant: "destructive", description: "Payment verification failed." });
+          }
+        },
+        prefill: { name: user?.name, email: user?.email },
+        theme: { color: "#78355b" },
+      };
+
+      const razor = new (window as any).Razorpay(options);
+      razor.open();
+    } catch (err) {
+      console.error("Payment initiation failed:", err);
+      toast({ variant: "destructive", description: "Could not initiate payment." });
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // APPOINTMENT BOOKING
+  // Called after payment is verified. Sends slot + doctor + user IDs.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleBookAppointment = async () => {
+    if (!selectedSlotId || !activeDoctor) return;
+
+    try {
+      const res = await axios.post(
+        "http://localhost:8089/api/v1/appointments/book",
+        null, // No request body — params sent as query strings
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            userId: currentUser?.id,
+            doctorId: activeDoctor.id,
+            slotId: selectedSlotId,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        toast({ title: res.data.message });
+      } else {
+        toast({ variant: "destructive", title: res.data.message });
+      }
+      setIsSlotModalOpen(false);
+    } catch (err) {
+      console.error("Appointment booking failed:", err);
+      toast({ variant: "destructive", title: "Booking failed. Please contact support." });
+    }
+  };
+
+  // ── FAQ accordion toggle ──
+  const toggleFaq = (idx: number) => {
+    setFaq(prev =>
+      prev.map((item, i) => (i === idx ? { ...item, show: !item.show } : item))
+    );
+  };
+
+  // Prevent SSR hydration mismatch — antd DatePicker is client-only
+  if (!hydrated) return null;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <>
+      <div className="min-h-screen bg-gray-50">
 
-      <div>
+        {/* ── HERO BANNER ── */}
         <WidthWrapper>
-          <div className="w-full h-[400px] bg-[#78355b] relative">
+          <div className="w-full h-[420px] bg-[#78355b] relative overflow-hidden rounded-b-2xl">
             <Image
               src={homeImg}
               layout="fill"
               objectFit="cover"
               objectPosition="center"
-              alt=""
+              alt="Delma Health"
             />
-            <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
-              {/* Place your items here */}
-              <h1 className="text-white text-xl md:text-4xl font-bold text-center ">
-                Dedicated to Your Wellbeing, Every Step of the Way.
+            {/* Gradient overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#78355b]/60 to-[#78355b]/80" />
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+              <h1 className="text-white text-2xl md:text-4xl font-bold text-center mb-2">
+                Dedicated to Your Wellbeing
               </h1>
-              <div className="flex w-full items-center justify-center mt-4">
-                <div className="border p-2 flex gap-2 w-[50%] relative search-container">
-                  <CiSearch size={20} className="cursor-pointer text-white" />
+              <p className="text-white/70 text-sm mb-8">
+                Find the right specialist, book instantly, consult securely
+              </p>
+
+              {/* Debounced doctor search with autocomplete dropdown */}
+              <div className="w-full max-w-lg relative search-container">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3">
+                  <Search size={18} className="text-white/60 flex-shrink-0" />
                   <input
                     type="text"
-                    placeholder="Search for medicines, health products and much more"
-                    className="bg-inherit outline-none focus:outline-none w-full text-sm text-white"
-                    onClick={handleInputClick} // Toggle suggestions on input click
-                    onChange={handleSearchInputChange} // Debounced input change handler
+                    placeholder="Search doctors by name or specialization..."
+                    className="bg-transparent outline-none w-full text-sm text-white placeholder:text-white/50"
+                    value={searchQuery}
+                    onClick={() => setShowSearchDropdown(true)}
+                    onChange={e => {
+                      setSearchQuery(e.target.value.trim());
+                      setShowSearchDropdown(true);
+                    }}
                   />
-                  {view && (
-                    <div className="w-full z-40 flex flex-col  max-h-[300px] py-4  overflow-y-scroll bg-white opacity-95 absolute top-[37px] left-0">
-                      {searchResults.map((ele: DoctorInputProps, idx) => (
-                        <div
-                          key={idx}
-                          className="hover:bg-gray-100 py-3  cursor-pointer flex items-center gap-8"
-                        >
-                          <p className="text-gray-600 text-sm font-semibold ml-4">
-                            Dr.{ele.firstName} {ele.lastName}
-                          </p>
+                  {searchQuery && (
+                    <button onClick={() => { setSearchQuery(""); setShowSearchDropdown(false); }}>
+                      <X size={16} className="text-white/60 hover:text-white" />
+                    </button>
+                  )}
+                </div>
 
+                {/* Search results dropdown */}
+                {showSearchDropdown && searchResults.length > 0 && (
+                  <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-2xl overflow-hidden z-50 max-h-72 overflow-y-auto">
+                    {searchResults.map((doctor, idx) => (
+                      <div
+                        key={idx}
+                        className="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                      >
+                        <div className="flex items-center justify-between">
                           <div>
-                            <DatePicker
-                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
-                              minDate={dayjs(getTodaysDate(), dateFormat)}
-                              maxDate={dayjs("2030-10-31", dateFormat)}
-                              onChange={(date: any) => setStartDate(date)}
-                              className="w-full"
-                              format={dateFormat}
-                            />
-
-                            <TimePicker
-                              defaultValue={dayjs(getCurrentTime(), timeFormat)}
-                              format={timeFormat}
-                              className="w-full"
-                              onChange={onChange}
-                              value={dayjs(selectedTime, timeFormat)}
-                            />
+                            <p className="text-sm font-semibold text-gray-800">
+                              Dr. {doctor.firstName} {doctor.lastName}
+                            </p>
+                            <p className="text-xs text-[#78355b]">{doctor.specialization}</p>
                           </div>
-                          <div>
+                          <div className="flex flex-col gap-1 items-end">
+                            <DatePicker
+                              defaultValue={dayjs(getTodaysDate(), DATE_FORMAT)}
+                              minDate={dayjs(getTodaysDate(), DATE_FORMAT)}
+                              onChange={(date: any) => setStartDate(date)}
+                              format={DATE_FORMAT}
+                              size="small"
+                            />
                             <Button
-                              className="w-full mx-auto  text-[12px] "
-                              variant={"outline"}
-                              onClick={() =>
-                                handleAvailabilityCheck(
-                                  ele.userId,
-                                  ele.firstName,
-                                  ele
-                                )
-                              }
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-7 border-[#78355b] text-[#78355b] hover:bg-[#78355b] hover:text-white"
+                              onClick={() => handleAvailabilityCheck(doctor.userId, doctor.firstName, doctor)}
                             >
-                              check availability
+                              Check slots
                             </Button>
-                            {/* <Button
-                            onClick={() =>
-                              handleBookAppointment(
-                                startDate,
-                                selectedTime,
-                                ele.id,
-                                ele.firstName
-                              )
-                            }
-                            className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95"
-                          >
-                            {" "}
-                            Book{" "}
-                          </Button> */}
-
-
-
                           </div>
                         </div>
-                      ))}
-
-                      {searchResults.length === 0 && (
-                        <p className="w-full text-center text-sm text-gray-500">
-                          No results found
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </WidthWrapper>
 
-        <WidthWrapper className="">
-          <div className="bg-gray-50 w-full flex">
-            <div className="flex-grow">
+        {/* ── MAIN CONTENT ── */}
+        <WidthWrapper>
+          <div className="flex gap-6 py-8">
+
+            {/* ── LEFT COLUMN: AI Checker + Filters + Doctor Cards ── */}
+            <div className="flex-grow min-w-0">
+
               {/* AI Symptom Checker */}
-              <div className="w-full max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-sm border border-[#78355b]/20">
+              <div className="bg-white rounded-2xl border border-[#78355b]/15 shadow-sm p-5 mb-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">🤖</span>
-                  <h2 className="text-base font-semibold text-gray-800">
-                    AI Symptom Checker
-                  </h2>
-                  <span className="text-xs bg-[#78355b]/10 text-[#78355b] px-2 py-0.5 rounded-full font-medium">
-                    Powered by AI
+                  <div className="w-8 h-8 rounded-lg bg-[#78355b]/10 flex items-center justify-center">
+                    <Brain size={16} className="text-[#78355b]" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-800">AI Symptom Checker</h2>
+                    <p className="text-xs text-gray-400">Powered by Groq AI (Llama 3.1)</p>
+                  </div>
+                  <span className="ml-auto text-xs bg-[#78355b]/10 text-[#78355b] px-2 py-0.5 rounded-full font-medium">
+                    Beta
                   </span>
                 </div>
+
                 <p className="text-xs text-gray-500 mb-3">
-                  Describe your symptoms and we'll recommend the right specialist for you.
+                  Describe your symptoms in plain English — our AI recommends the right specialist
+                  and filters the list for you.
                 </p>
+
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSymptomCheck()}
-                    placeholder="e.g. chest pain, shortness of breath, fever..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#78355b]"
+                    onChange={e => setSymptoms(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSymptomCheck()}
+                    placeholder="e.g. chest pain and shortness of breath..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#78355b] transition-colors"
                   />
                   <Button
                     onClick={handleSymptomCheck}
                     disabled={aiLoading}
-                    className="bg-[#78355b] text-white hover:bg-[#5e2947] text-sm px-4"
+                    className="bg-[#78355b] hover:bg-[#5e2947] text-white text-sm px-5 rounded-lg"
                   >
                     {aiLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Analyze"}
                   </Button>
                 </div>
 
-                {/* AI Result */}
+                {/* AI result — shown after successful analysis */}
                 {aiResult && (
-                  <div className="mt-4 p-3 bg-[#78355b]/5 rounded-lg border border-[#78355b]/20">
-                    <p className="text-sm font-semibold text-[#78355b]">
-                      Recommended: {aiResult.specialization}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">{aiResult.message}</p>
-                    <p className="text-xs text-gray-400 mt-1 italic">{aiResult.disclaimer}</p>
-                    <button
-                      onClick={async () => {
-                        const response = await axiosInstance.get("/api/users/doctors");
-                        setDocs(response.data.data);
-                        setAiResult(null);
-                        setSymptoms("");
-                        setCurrentPage(1);
-                      }}
-                      className="text-xs text-[#78355b] underline mt-2"
-                    >
-                      Clear and show all doctors
-                    </button>
+                  <div className="mt-4 p-4 bg-[#78355b]/5 rounded-xl border border-[#78355b]/15">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-[#78355b] flex items-center gap-1">
+                          <Stethoscope size={14} />
+                          Recommended: {aiResult.specialization}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">{aiResult.message}</p>
+                        <p className="text-xs text-gray-400 mt-1 italic">{aiResult.disclaimer}</p>
+                      </div>
+                      <button
+                        onClick={handleClearAiFilter}
+                        className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0 flex items-center gap-1"
+                      >
+                        <X size={12} /> Clear
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="flex w-[300px] gap-4 overflow-hidden md:w-full  justify-center items-center mt-12">
-                <Filter />
-                <p className="text-xs font-semibold text-gray-600 ml-2">FILTER</p>
-                <div className="flex flex-col md:flex-row md:w-[60%] md:ml-4 gap-2">
+
+              {/* Filter bar */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-gray-500">
+                    <Filter size={14} />
+                    <span className="text-xs font-semibold uppercase tracking-wide">Filter</span>
+                  </div>
+
+                  {/*
+                    Controlled selects — value prop ensures they visually reset
+                    when handleClearFilters is called
+                  */}
                   <select
-                    className="w-[130px]  focus:outline-none outline-none text-sm text-gray-600 rounded-md"
-                    onChange={(e) => setSelectedSpecialization(e.target.value)}
-                    defaultValue=""
+                    value={selectedSpecialization}
+                    onChange={e => setSelectedSpecialization(e.target.value)}
+                    className="text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#78355b]"
                   >
-                    <option value="" disabled selected hidden>
-                      Specializations
-                    </option>
-                    {specializationData.map((item, idx) => (
-                      <option key={idx} value={item}>
-                        {item}
-                      </option>
+                    <option value="">Specialization</option>
+                    {SPECIALIZATIONS.map(s => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
 
-                  {/* Gender Select */}
                   <select
-                    className="w-[100px] rounded-md  focus:outline-none outline-none  text-sm text-gray-600"
-                    onChange={(e) => setSelectedGender(e.target.value)}
+                    value={selectedGender}
+                    onChange={e => setSelectedGender(e.target.value)}
+                    className="text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#78355b]"
                   >
-                    <option value="" disabled selected hidden>
-                      Gender
-                    </option>
+                    <option value="">Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
 
-                  {/* Sort By Select */}
                   <select
-                    className="w-[160px] focus:outline-none outline-none  text-sm text-gray-600"
-                    onChange={(e) => setSelectedSortBy(e.target.value)}
+                    value={selectedSortBy}
+                    onChange={e => setSelectedSortBy(e.target.value)}
+                    className="text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#78355b]"
                   >
-                    <option value="" disabled selected hidden>
-                      Sort by
-                    </option>
-                    <option value="experience-low-high">
-                      Experience low - high
-                    </option>
-                    <option value="experience-high-low">
-                      Experience high - low
-                    </option>
+                    <option value="">Sort by</option>
+                    <option value="experience-low-high">Experience: Low → High</option>
+                    <option value="experience-high-low">Experience: High → Low</option>
                   </select>
-                  <Button onClick={handleFilter} className="bg-[#78355b]">Apply Filter</Button>
+
+                  <Button
+                    onClick={handleFilter}
+                    size="sm"
+                    className="bg-[#78355b] hover:bg-[#5e2947] text-white rounded-lg text-sm"
+                  >
+                    Apply
+                  </Button>
+
+                  {/* Clear button — only shows when at least one filter is active */}
+                  {(selectedSpecialization || selectedGender || selectedSortBy) && (
+                    <Button
+                      onClick={handleClearFilters}
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg text-sm border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-300 flex items-center gap-1"
+                    >
+                      <X size={12} /> Clear
+                    </Button>
+                  )}
+
+                  {/* Shows filtered count vs total */}
+                  <span className="ml-auto text-xs text-gray-400">
+                    {memoizedDocs.length} of {originalDocs.length} doctor{originalDocs.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </div>
-              <div className="">
-                {isLoading ? (
-                  <Loader2 className="animate-spin mx-auto " size={24} />
-                ) : (
-                  <>
-                    {currentPosts.map((ele: DoctorInputProps, idx) => (
-                      <div key={idx} className="w-[380px] h-[260px] md:w-[500px] mx-auto shadow-sm mt-4 flex">
-                        {/* Left Side: Image */}
-                        <div className="bg-[#F1F6F7] h-full hidden md:w-[25%] md:flex justify-center items-center">
-                          <Image src={img3} alt="" height={100} width={100} className="rounded-full shadow-sm" />
-                        </div>
 
-                        {/* Middle: Doctor Info */}
-                        <div className="w-[40%] flex flex-col ">
-                          <p className="font-semibold ml-4 mt-4">Dr.{ele.firstName}</p>
-                          <div className="flex gap-4 border-b border-gray-200 w-[85%] mx-auto">
-                            <p className="text-[#007291] text-sm mb-4">{ele.specialization}</p>
-                            <p className="text-[#007291] text-sm mb-4">{ele.gender}</p>
-                          </div>
-                          <div className="flex flex-col gap-2 mt-2 ml-2">
-                            <div className="flex items-center gap-2"><CiLocationOn /><p className="text-gray-600 text-sm">{ele.address}</p></div>
-                            <div className="flex items-center gap-2"><PiFlaskThin /><p className="text-gray-600 text-sm">{ele.experience} yrs</p></div>
-                            <div className="flex items-center gap-2"><PiMoneyThin /><p className="text-gray-600 text-sm">₹ {ele.feesPerConsultation}</p></div>
-                          </div>
-                        </div>
+              {/* Doctor cards */}
+              {isLoading ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 className="animate-spin text-[#78355b]" size={32} />
+                </div>
+              ) : currentPosts.length === 0 ? (
+                <div className="text-center py-20 text-gray-400">
+                  <Stethoscope size={40} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No doctors found. Try adjusting your filters.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {currentPosts.map((doctor, idx) => (
+                    <DoctorCard
+                      key={idx}
+                      doctor={doctor}
+                      startDate={startDate}
+                      onDateChange={setStartDate}
+                      onCheckAvailability={handleAvailabilityCheck}
+                    />
+                  ))}
+                </div>
+              )}
 
-                        {/* Right Side: Actions */}
-                        <div className="w-[35%] p-2 flex flex-col justify-center gap-4">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold text-gray-400">SELECT DATE</label>
-                            <DatePicker
-                              defaultValue={dayjs(getTodaysDate(), dateFormat)}
-                              minDate={dayjs(getTodaysDate(), dateFormat)}
-                              onChange={(date: any) => setStartDate(date)}
-                              className="w-full"
-                              format={dateFormat}
-                            />
-                          </div>
-
-                          {/* THIS IS THE ONLY BUTTON YOU NEED HERE */}
-                          <Button
-                            className="w-full bg-[#78355b] text-white hover:bg-[#5e2947]"
-                            onClick={() => handleAvailabilityCheck(ele.userId, ele.firstName, ele)}
-                          >
-                            Check Availability
-                          </Button>
-
-                          <p className="text-[10px] text-center text-gray-400 italic">
-                            View real-time slots to book
-                          </p>
-                        </div>
-                      </div>
-
-                    ))}
-                    <div className="mt-12 mb-12">
-                      <PaginationSection
-                        totalPosts={memoizedDocs.length}
-                        postsPerPage={postsPerPage}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                      />
-                    </div>
-                    {/* ADD THIS DIALOG BLOCK HERE */}
-
-
-                  </>
-                )}
-              </div>
+              {/* Pagination — only shown when there are more doctors than one page */}
+              {memoizedDocs.length > POSTS_PER_PAGE && (
+                <PaginationBar
+                  total={memoizedDocs.length}
+                  perPage={POSTS_PER_PAGE}
+                  current={currentPage}
+                  onChange={setCurrentPage}
+                />
+              )}
             </div>
-            <div className="w-[500px]  hidden lg:block">
-              <div className="w-[300px]  border border-gray-300 mt-12  ">
-                <div className="mt-12">
-                  <Image
-                    src={helpImg}
-                    alt=""
-                    width={230}
-                    height={300}
-                    className="mx-auto"
-                  />
 
-                  <div className="bg-[#F1F6F7] w-[90%] mx-auto rounded-sm max-h-[400px] overflow-scroll mt-6">
-                    <p className=" font-semibold text-gray-600 text-center mt-6">
-                      About Delma Application
-                    </p>
-                    <p className="text-sm tracking-wider text-gray-500 p-6 ">
-                      The renowned team are recognized stalwarts of their fields
-                      and have many years of experience amongst them. The team
-                      specializes in a multitude of disciplines dealing with
-                      injuries, congenital or acquired disorders, overuse
-                      conditions of the bones and joints, and conditions
-                      associated with soft tissues, which include the ligaments,
-                      nerves, and muscles. The surgical team at Apollo Hospitals
-                      delivers the best treatments made possible with the team of
-                      physical therapists, sports medicine therapists, pediatric
-                      orthopedic surgeons, arthroscopy surgeons, spine surgeons,
-                      knee specialists, hip-replacement specialists, patient
-                      counselors, and nurses. When you visit Apollo Hospitals for
-                      any orthopedic concern, you will be greeted by a
-                      professional team backed by the latest in modern medical
-                      techniques and technology. The team will work with you every
-                      step of your treatment and recovery journey.
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="font-bold mt-6 text-gray-500 text-center">
-                    Frequently Asked Questions
+            {/* ── RIGHT SIDEBAR: About + FAQ ── */}
+            <div className="w-72 flex-shrink-0 hidden lg:block">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-6">
+                <Image
+                  src={helpImg}
+                  alt="Help"
+                  width={288}
+                  height={180}
+                  className="w-full object-cover"
+                />
+
+                <div className="p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">About Delma Health</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Connecting patients with verified specialists for secure video consultations,
+                    document sharing, and seamless appointment management.
                   </p>
-                  <div className="w-[80%] mx-auto mt-6 flex flex-col gap-4 mb-12">
-                    {question.map((ele, idx) => (
-                      <div className="flex flex-col " key={idx}>
-                        <div className="flex">
-                          <p className="text-[#007291] text-[14px] mt-2">
-                            {ele.title}
-                          </p>
-                          <div
-                            onClick={() => handleFNQ(idx)}
-                            className="cursor-pointer"
-                          >
-                            -
+                </div>
+
+                <div className="border-t border-gray-100 p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                    Frequently Asked Questions
+                  </h3>
+                  <div className="space-y-3">
+                    {faq.map((item, idx) => (
+                      <div key={idx} className="border border-gray-100 rounded-xl overflow-hidden">
+                        <button
+                          onClick={() => toggleFaq(idx)}
+                          className="w-full text-left px-3 py-2.5 flex items-start justify-between gap-2 hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="text-xs text-gray-700 font-medium leading-snug">
+                            {item.title}
+                          </span>
+                          <span className="text-gray-400 flex-shrink-0 mt-0.5 text-sm">
+                            {item.show ? "−" : "+"}
+                          </span>
+                        </button>
+                        {item.show && (
+                          <div className="px-3 pb-3">
+                            <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                           </div>
-                        </div>
-                        {ele.show && (
-                          <p className="text-gray-400 text-[12px]">{ele.desc}</p>
                         )}
                       </div>
                     ))}
@@ -924,55 +760,72 @@ export default function Page() {
                 </div>
               </div>
             </div>
+
           </div>
         </WidthWrapper>
-
-
-
       </div>
+
+      {/* ── SLOT SELECTION MODAL ── */}
       <Dialog open={isSlotModalOpen} onOpenChange={setIsSlotModalOpen}>
-        <DialogContent className="fixed left-1/2 top-1/2 z-[100] grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white p-6 shadow-lg duration-200 rounded-lg">
+        <DialogContent className="fixed left-1/2 top-1/2 z-[100] w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6">
           <DialogHeader>
-            <DialogTitle className="text-[#78355b] text-xl font-bold">
-              Available Time Slots
+            <DialogTitle className="text-lg font-semibold text-gray-800">
+              Available Slots
             </DialogTitle>
-            <p className="text-sm text-gray-500">
-              Booking with **Dr. {activeDoctor?.name}** for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
+            <p className="text-sm text-gray-500 mt-1">
+              Booking with{" "}
+              <span className="font-medium text-[#78355b]">Dr. {activeDoctor?.name}</span>
+              {" "}for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
             </p>
+            {activeDoctor && (
+              <p className="text-xs text-gray-400 mt-0.5">
+                Consultation fee:{" "}
+                <span className="font-medium text-gray-600">₹{activeDoctor.fees}</span>
+              </p>
+            )}
           </DialogHeader>
 
-          {/* The Scrollable Slot Grid */}
-          <div className="grid grid-cols-3 gap-3 my-6 max-h-[300px] overflow-y-auto p-1">
+          {/* Slot grid */}
+          <div className="grid grid-cols-3 gap-2 my-5 max-h-56 overflow-y-auto">
             {availableSlots.length > 0 ? (
-              availableSlots.map((slot) => (
+              availableSlots.map(slot => (
                 <button
                   key={slot.id}
-                  onClick={() => selectSelectedSlotId(slot.id.toString())}
-                  className={`py-2 px-1 text-xs font-bold rounded-md border transition-all ${selectedSlotId === slot.id.toString()
-                    ? "bg-[#78355b] text-white border-[#78355b] shadow-md"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:border-[#78355b]"
-                    }`}
+                  onClick={() => setSelectedSlotId(slot.id.toString())}
+                  className={`py-2.5 px-2 text-xs font-semibold rounded-xl border-2 transition-all ${
+                    selectedSlotId === slot.id.toString()
+                      ? "bg-[#78355b] text-white border-[#78355b] shadow-md scale-105"
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-[#78355b] hover:text-[#78355b]"
+                  }`}
                 >
-                  {slot.startTime.substring(0, 5)}
+                  <Clock size={12} className="mx-auto mb-1" />
+                  {slot.startTime?.substring(0, 5)}
                 </button>
               ))
             ) : (
-              <p className="col-span-3 text-center py-6 text-gray-400 italic">
-                No available slots for this date.
-              </p>
+              <div className="col-span-3 text-center py-8 text-gray-400">
+                <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No slots available for this date</p>
+                <p className="text-xs mt-1">Try selecting a different date</p>
+              </div>
             )}
           </div>
 
-          <div className="flex gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsSlotModalOpen(false)} className="flex-1">
+          {/* Action buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-100">
+            <Button
+              variant="outline"
+              onClick={() => setIsSlotModalOpen(false)}
+              className="flex-1 rounded-xl border-gray-200 text-gray-600"
+            >
               Cancel
             </Button>
             <Button
               onClick={makePayment}
               disabled={!selectedSlotId}
-              className="flex-1 bg-[#78355b] text-white hover:bg-[#5e2947]"
+              className="flex-1 bg-[#78355b] hover:bg-[#5e2947] text-white rounded-xl disabled:opacity-40"
             >
-              Confirm & Book
+              {selectedSlotId ? `Pay ₹${activeDoctor?.fees}` : "Select a slot"}
             </Button>
           </div>
         </DialogContent>
@@ -981,121 +834,133 @@ export default function Page() {
   );
 }
 
-function PaginationSection({
-  totalPosts,
-  postsPerPage,
-  currentPage,
-  setCurrentPage,
-}: {
-  totalPosts: any;
-  postsPerPage: any;
-  currentPage: any;
-  setCurrentPage: any;
-}) {
-  const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil(totalPosts / postsPerPage); i++) {
-    pageNumbers.push(i);
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+// DOCTOR CARD COMPONENT
+// Renders a single doctor's info with date picker and availability button.
+// Extracted as a separate component to keep the main page readable.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const maxPageNum = 5; // Maximum page numbers to display at once
-  const pageNumLimit = Math.floor(maxPageNum / 2); // Current page should be in the middle if possible
+interface DoctorCardProps {
+  doctor: DoctorInputProps;
+  startDate: Date | null;
+  onDateChange: (date: Date | null) => void;
+  onCheckAvailability: (id: number, name: string, doctor: DoctorInputProps) => void;
+}
 
-  let activePages = pageNumbers.slice(
-    Math.max(0, currentPage - 1 - pageNumLimit),
-    Math.min(currentPage - 1 + pageNumLimit + 1, pageNumbers.length)
-  );
-
-  const handleNextPage = () => {
-    if (currentPage < pageNumbers.length) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  // Function to render page numbers with ellipsis
-  const renderPages = () => {
-    const renderedPages = activePages.map((page, idx) => (
-      <PaginationItem
-        key={idx}
-        className={currentPage === page ? "bg-neutral-100 rounded-md" : ""}
-      >
-        <PaginationLink onClick={() => setCurrentPage(page)}>
-          {page}
-        </PaginationLink>
-      </PaginationItem>
-    ));
-
-    // Add ellipsis at the start if necessary
-    if (activePages[0] > 1) {
-      renderedPages.unshift(
-        <PaginationEllipsis
-          key="ellipsis-start"
-          onClick={() => setCurrentPage(activePages[0] - 1)}
-          className="cursor-pointer"
-        />
-      );
-    }
-
-    // Add ellipsis at the end if necessary
-    if (activePages[activePages.length - 1] < pageNumbers.length) {
-      renderedPages.push(
-        <PaginationEllipsis
-          key="ellipsis-end"
-          onClick={() =>
-            setCurrentPage(activePages[activePages.length - 1] + 1)
-          }
-          className="cursor-pointer"
-        />
-      );
-    }
-
-    return renderedPages;
-  };
-
+function DoctorCard({ doctor, startDate, onDateChange, onCheckAvailability }: DoctorCardProps) {
   return (
-    <div className="cursor-pointer">
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious onClick={handlePrevPage} />
-          </PaginationItem>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5 flex gap-4">
 
-          {renderPages()}
+      {/* Doctor avatar — hidden on mobile */}
+      <div className="w-20 h-20 rounded-xl overflow-hidden bg-[#78355b]/10 flex-shrink-0 hidden md:block">
+        <Image
+          src={img3}
+          alt={doctor.firstName}
+          width={80}
+          height={80}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-          <PaginationItem>
-            <PaginationNext onClick={handleNextPage} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      {/* Doctor info */}
+      <div className="flex-grow min-w-0">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <h3 className="font-semibold text-gray-800">
+              Dr. {doctor.firstName} {doctor.lastName}
+            </h3>
+            <span className="inline-block text-xs bg-[#78355b]/10 text-[#78355b] px-2 py-0.5 rounded-full mt-0.5">
+              {doctor.specialization}
+            </span>
+          </div>
+          <span className="text-xs text-gray-400 flex-shrink-0">{doctor.gender}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+          {doctor.address && (
+            <span className="flex items-center gap-1">
+              <MapPin size={11} className="text-gray-400" /> {doctor.address}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Clock size={11} className="text-gray-400" /> {doctor.experience} yrs experience
+          </span>
+          <span className="flex items-center gap-1 font-medium text-gray-700">
+            <IndianRupee size={11} className="text-gray-400" /> {doctor.feesPerConsultation} per consultation
+          </span>
+        </div>
+      </div>
+
+      {/* Action column — date picker + availability button */}
+      <div className="flex-shrink-0 flex flex-col gap-2 items-end justify-center">
+        <div>
+          <p className="text-[10px] text-gray-400 font-medium mb-1 text-right">SELECT DATE</p>
+          <DatePicker
+            defaultValue={dayjs(getTodaysDate(), DATE_FORMAT)}
+            minDate={dayjs(getTodaysDate(), DATE_FORMAT)}
+            onChange={(date: any) => onDateChange(date)}
+            format={DATE_FORMAT}
+            size="small"
+          />
+        </div>
+        <Button
+          size="sm"
+          className="bg-[#78355b] hover:bg-[#5e2947] text-white rounded-lg text-xs w-full"
+          onClick={() => onCheckAvailability(doctor.userId, doctor.firstName, doctor)}
+        >
+          Check Availability
+        </Button>
+      </div>
     </div>
   );
 }
 
-function generateUniqueString() {
-  const timestamp = Date.now().toString(36); // Convert current timestamp to base 36 string
-  const randomString = Math.random().toString(36).substring(2, 8); // Generate random string and take a substring
-  return `${timestamp}-${randomString}`;
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGINATION COMPONENT
+// Simple numbered pagination with prev/next arrows.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface PaginationBarProps {
+  total: number;
+  perPage: number;
+  current: number;
+  onChange: (page: number) => void;
 }
 
-function getTodaysDate() {
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
-  const day = String(currentDate.getDate()).padStart(2, "0");
-  const formattedDate = `${year}-${month}-${day}`;
+function PaginationBar({ total, perPage, current, onChange }: PaginationBarProps) {
+  const totalPages = Math.ceil(total / perPage);
 
-  return formattedDate;
-}
+  return (
+    <div className="flex items-center justify-center gap-1 mt-8 pb-4">
+      <button
+        onClick={() => onChange(Math.max(1, current - 1))}
+        disabled={current === 1}
+        className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-[#78355b] hover:text-[#78355b] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft size={14} />
+      </button>
 
-function getCurrentTime() {
-  const currentDate = new Date();
-  const hours = String(currentDate.getHours()).padStart(2, "0");
-  const minutes = String(currentDate.getMinutes()).padStart(2, "0");
-  const formattedTime = `${hours}:${minutes}`;
-  return formattedTime;
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+        <button
+          key={page}
+          onClick={() => onChange(page)}
+          className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+            current === page
+              ? "bg-[#78355b] text-white"
+              : "border border-gray-200 text-gray-600 hover:border-[#78355b] hover:text-[#78355b]"
+          }`}
+        >
+          {page}
+        </button>
+      ))}
+
+      <button
+        onClick={() => onChange(Math.min(totalPages, current + 1))}
+        disabled={current === totalPages}
+        className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-[#78355b] hover:text-[#78355b] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  );
 }

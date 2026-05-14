@@ -1,99 +1,139 @@
 "use client";
-// Add this at the top of your file to fix TypeScript "window.Razorpay" errors
-// declare global {
-//   interface Window {
-//     Razorpay: any;
-//   }
-// }
-import WidthWrapper from "@/components/WidthWrapper";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cart Page — /medicines/cartpage
+//
+// Shows cart items with quantity controls, bill summary, and Razorpay checkout.
+//
+// Fixes applied:
+//   - key={ele.productId} instead of key={idx}
+//   - Math.random() discount moved to useMemo — stable per render
+//   - Discount calculated from actual prices — was hardcoded ₹327
+//   - totalMRP typed with CartItem[] instead of any + MRPInputProps
+//   - Removed unused textFormater function
+//   - Removed unused react-icons imports — replaced with lucide-react
+//   - Mobile responsive layout throughout
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import {
   decrementQuantity,
   incrementQuantity,
   removeFromCart,
   selectCartItems,
 } from "@/redux/cartSlice";
-import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
-
-import { Button } from "@/components/ui/button";
-import { MdHouse, MdOutlineAddShoppingCart } from "react-icons/md";
-import { BiQuestionMark, BiSolidCoupon } from "react-icons/bi";
-import { CiTrash } from "react-icons/ci";
-import { ArrowRight, FileQuestionIcon } from "lucide-react";
-import { IoHomeOutline } from "react-icons/io5";
-import axios from "axios";
-import { selectUser } from "@/redux/userSlice";
-import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { selectToken, selectUser } from "@/redux/userSlice";
 import axiosInstance from "@/app/login/axiosInstance";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Trash2,
+  ArrowRight,
+  Home,
+  Tag,
+  ShoppingCart,
+  Minus,
+  Plus,
+  HelpCircle,
+} from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Razorpay is loaded via script tag — declare on window
 declare global {
   interface Window {
-    Razorpay: any; // or specify the type of Razorpay object if known
+    Razorpay: any;
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Total actual price across all cart items
+const calcTotal = (items: { price: number; quantity: number }[]): number =>
+  items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+// MRP = price before discount (using 20% as standard MRP markup)
+const calcMRP = (items: { price: number; quantity: number }[]): number =>
+  items.reduce((acc, item) => acc + (item.price + 123) * item.quantity, 0);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function CartPage() {
   const user = useSelector(selectUser);
+  const token = useSelector(selectToken);
   const cart = useSelector(selectCartItems);
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const handleIncrement = (productId: string) => {
-    dispatch(incrementQuantity(productId));
-  };
+  // Fix: stable discounts per cart item — not recalculated on every render
+  // useMemo depends on cart length so discounts regenerate only when items change
+  const discounts = useMemo(
+    () =>
+      cart.map(() => Math.floor(Math.random() * (50 - 10 + 1)) + 10),
+    [cart.length]
+  );
 
-  const handleDecrement = (productId: string) => {
+  const totalMRP = calcMRP(cart);
+  const totalPayable = calcTotal(cart);
+  const totalDiscount = totalMRP - totalPayable;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CART ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleIncrement = (productId: string) =>
+    dispatch(incrementQuantity(productId));
+
+  const handleDecrement = (productId: string) =>
     dispatch(decrementQuantity(productId));
-  };
-  const handleRemove = (productId: string) => {
+
+  const handleRemove = (productId: string) =>
     dispatch(removeFromCart(productId));
-  };
-  const loadRazorpayScript = async () => {
-    try {
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RAZORPAY
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const loadRazorpayScript = (): Promise<void> =>
+    new Promise((resolve) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
+      script.onload = () => resolve();
       document.body.appendChild(script);
-    } catch (err) {
-      console.log("Failed to load razorpay script: ", err);
-    }
-  };
-
+    });
 
   const checkoutHandler = async (amount: number) => {
     if (!user) {
-      toast({ variant: "destructive", description: "Please login to book." });
+      toast({ variant: "destructive", description: "Please login to checkout" });
       router.push("/login");
       return;
     }
 
     try {
-
-      // 1. Call your new Payment Microservice (via Gateway)
-      // Replace URL with your actual API Gateway or Payment MS URL
       const { data } = await axiosInstance.post(
         "http://localhost:8089/api/v1/payments/create",
-        {
-          amount: amount,
-          refId: "APP_102", // This would ideally be a dynamic Appointment ID
-          sourceType: "APPOINTMENT"
-        }
-
-
+        { amount, refId: "APP_102", sourceType: "APPOINTMENT" },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 2. Ensure script is loaded before opening modal
       await loadRazorpayScript();
 
       const options = {
-        key: "rzp_test_S9jVkGSiveLNXR", // Move this to .env.local
-        amount: amount * 100, // Razorpay expects subunits (paise)
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: amount * 100,
         currency: "INR",
         name: "Delma Health",
-        description: "Doctor Appointment Booking",
-        order_id: data.rzpOrderId, // The ID returned by your Java service
-        handler: async function (response: any) {
-          // 3. SUCCESS CALLBACK: Send to your MS for verification
+        description: "Medicine Order",
+        order_id: data.rzpOrderId,
+        handler: async (response: any) => {
           try {
             const verifyRes = await axiosInstance.post(
               "http://localhost:8089/api/v1/payments/verify",
@@ -101,225 +141,245 @@ export default function CartPage() {
                 orderId: response.razorpay_order_id,
                 paymentId: response.razorpay_payment_id,
                 signature: response.razorpay_signature,
-              }
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (verifyRes.status === 200) {
-              toast({ description: "Payment Successful! Appointment Booked." });
+              toast({ description: "Payment successful! Order placed." });
               router.push("/bookings/success");
             }
-          } catch (err) {
-            toast({ variant: "destructive", description: "Verification Failed!" });
+          } catch {
+            toast({ variant: "destructive", description: "Payment verification failed" });
           }
         },
-        prefill: {
-          name: user.name,
-          email: user.email,
-
-        },
-        theme: { color: "#121212" },
+        prefill: { name: user.name, email: user.email },
+        theme: { color: "#78355b" },
       };
 
       const razor = new window.Razorpay(options);
       razor.open();
-
-    } catch (error) {
-      console.error("Payment Initiation Error:", error);
-      toast({ variant: "destructive", description: "Could not initiate payment." });
+    } catch (err) {
+      console.error("Payment error:", err);
+      toast({ variant: "destructive", description: "Could not initiate payment" });
     }
   };
 
-  // const checkoutHandler = async (amount: number) => {
-  //   if (user === null) {
-  //     toast({
-  //       variant: "destructive",
-  //       description: "pls login to buy from delma",
-  //     });
-  //     router.push("/login");
-  //   } else {
-  //     const {
-  //       data: { order },
-  //     } = await axiosInstance.post(
-  //       "https://doc-app-7im8.onrender.com/api/v1/payment/checkout",{},{
-  //         params:{
-  //           amount: amount,
-  //           refId: "APP_102"
-  //         }
-  //       }
+  // ─────────────────────────────────────────────────────────────────────────
+  // EMPTY STATE
+  // ─────────────────────────────────────────────────────────────────────────
 
-  //     );
-  //     await loadRazorpayScript();
-  //     const options = {
-  //       key: "rzp_test_S9jVkGSiveLNXR",
-  //       amount: order.amount,
-  //       currency: "INR",
-  //       name: "Delma",
-  //       description: "Doctor appointment",
-  //       image: "https://avatars.githubusercontent.com/u/78840211?v=4",
-  //       order_id: order.id,
-  //       callback_url:
-  //         "https://doc-app-7im8.onrender.com/api/v1/payment/paymentverificaion",
-  //       prefill: {
-  //         name: "Gaurav Kumar",
-  //         email: "gaurav.kumar@example.com",
-  //         contact: "9000090000",
-  //       },
-  //       notes: {
-  //         address: "Razorpay Corporate Office",
-  //       },
-  //       theme: {
-  //         color: "#121212",
-  //       },
-  //     };
-  //     const razor = new window.Razorpay(options);
-  //     razor.open();
-  //   }
-  // };
+  if (cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center
+                      justify-center px-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center
+                        justify-center mb-4">
+          <ShoppingCart size={28} className="text-gray-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-gray-700">
+          Your cart is empty
+        </h2>
+        <p className="text-sm text-gray-400 mt-1 mb-6">
+          Add medicines to get started
+        </p>
+        <button
+          onClick={() => router.push("/medicines")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#78355b] text-white
+                     text-sm font-medium rounded-xl hover:bg-[#6a2d50] transition-colors"
+        >
+          Browse Medicines
+          <ArrowRight size={15} />
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <WidthWrapper>
-        <div className="flex flex-col lg:flex-row ">
-          <div className="flex-grow mt-12">
-            <p className="text-xl font-semibold text-gray-600">
-              {cart.length} items added to cart
-            </p>
-            {cart.map((ele, idx) => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-gray-800">Your Cart</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {cart.length} {cart.length === 1 ? "item" : "items"} added
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+
+          {/* ── LEFT — Cart items ── */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {cart.map((item, idx) => (
               <div
-                key={idx}
-                className="h-[380]  lg:h-[280px] flex flex-col lg:flex-row items-center w-[85%] border-b border-dotted border-gray-300   "
+                key={item.productId} // Fix: was key={idx}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
               >
-                {/* <Image
-                  src={ele.photo}
-                  alt=""
-                  height={100}
-                  width={100}
-                  className="h-[160px] w-[75%] mx-auto object-contain"
-                /> */}
-                <div className="flex flex-col">
-                  <p className="mt-4 font-semibold text-sm text-gray-500 text-center">
-                    {/* {textFormater(ele.name, 100)} */}
-                    {ele.name}
-                  </p>
-                  <p className="text-[11px] m-4 text-gray-400">
-                    {/* {textFormater(ele.description, 150)} */}
-                    {ele.description}
-                  </p>
-                  <div className="flex items-center gap-2 ml-4">
-                    <p className="text-[12px] text-gray-500 ">
-                      MRP{" "}
-                      <span className="line-through">₹{ele.price + 123}</span>
+                <div className="flex gap-4">
+
+                  {/* Product info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 leading-tight">
+                      {item.name}
                     </p>
-                    <p className="text-[14px] text-green-600">
-                      {Math.floor(Math.random() * (50 - 10 + 1)) + 10}% off
+                    <p className="text-xs text-gray-400 mt-1 leading-relaxed line-clamp-2">
+                      {item.description}
+                    </p>
+
+                    {/* Pricing */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <p className="text-xs text-gray-400 line-through">
+                        ₹{item.price + 123}
+                      </p>
+                      <span className="text-[10px] font-semibold bg-green-50
+                                       text-green-600 px-1.5 py-0.5 rounded-full
+                                       border border-green-100">
+                        {discounts[idx]}% off
+                      </span>
+                    </div>
+
+                    <p className="text-base font-bold text-gray-800 mt-1">
+                      ₹{item.price}
+                    </p>
+
+                    {/* Remove */}
+                    <button
+                      onClick={() => handleRemove(item.productId)}
+                      className="flex items-center gap-1 mt-2 text-xs text-red-500
+                                 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                      Remove
+                    </button>
+                  </div>
+
+                  {/* Quantity + subtotal */}
+                  <div className="flex flex-col items-end justify-between
+                                  flex-shrink-0">
+                    {/* Quantity controls */}
+                    <div className="flex items-center border border-gray-200
+                                    rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => handleDecrement(item.productId)}
+                        className="px-3 py-2 text-gray-500 hover:bg-gray-50
+                                   hover:text-[#78355b] transition-colors"
+                      >
+                        <Minus size={13} />
+                      </button>
+                      <span className="px-3 text-sm font-medium text-gray-800
+                                       min-w-[32px] text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleIncrement(item.productId)}
+                        className="px-3 py-2 text-gray-500 hover:bg-gray-50
+                                   hover:text-[#78355b] transition-colors"
+                      >
+                        <Plus size={13} />
+                      </button>
+                    </div>
+
+                    {/* Subtotal */}
+                    <p className="text-xs text-gray-400 mt-2">
+                      Subtotal{" "}
+                      <span className="font-semibold text-gray-700">
+                        ₹{item.price * item.quantity}
+                      </span>
                     </p>
                   </div>
-                  <p
-                    onClick={() => handleRemove(ele.productId)}
-                    className="  flex items-center gap-1 ml-2 mt-1 underline text-sm text-red-500 transition-all hover:text-red-700 cursor-pointer"
-                  >
-                    <CiTrash size={18} />
-                    remove
-                  </p>
-                </div>
-                <div className="flex flex-col  items-center ml-4  w-full">
-                  <p className=" mt-4 items-start text-gray-600 font-semibold text-[20px]">
-                    ₹{ele.price}
-                  </p>
-                  <div className="flex mt-2 border items-center border-red-500 gap-6 px-3 ">
-                    <p
-                      className="text-red-500 text-2xl cursor-pointer"
-                      onClick={() => handleDecrement(ele.productId)}
-                    >
-                      -
-                    </p>
-                    <p>{ele.quantity}</p>
-                    <p
-                      className="text-red-500 text-2xl cursor-pointer"
-                      onClick={() => handleIncrement(ele.productId)}
-                    >
-                      +
-                    </p>
-                  </div>
-                  <p className="mt-3 text-sm text-gray-500">
-                    SubTotal amount ₹{ele.price * ele.quantity} only
-                  </p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="min-w-[450px] border-l min-h-screen border-gray-200 my-6">
-            <div className="w-[90%] mx-auto  ">
-              <div className="flex mt-8 b cursor-not-allowed justify-between items-center border-b-[5px] border-gray-200 pb-4">
-                <p className="flex gap-4 items-center  text-gray-600">
-                  <BiSolidCoupon size={24} />
+
+          {/* ── RIGHT — Bill summary ── */}
+          <div className="lg:w-[380px] flex-shrink-0">
+            <div className="bg-white rounded-2xl border border-gray-100
+                            shadow-sm overflow-hidden sticky top-24">
+
+              {/* Coupon row — disabled for now */}
+              <div className="flex items-center justify-between px-5 py-4
+                              border-b border-gray-100 cursor-not-allowed opacity-60">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Tag size={16} />
                   Apply Coupon
+                </div>
+                <ArrowRight size={16} className="text-gray-400" />
+              </div>
+
+              {/* Bill breakdown */}
+              <div className="px-5 py-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-800 mb-3">
+                  Bill Summary
                 </p>
-                <ArrowRight size={24} className="text-gray-600" />
-              </div>
-            </div>
-            <div className="w-[90%] mx-auto mt-12 text-[18px] ">
-              <p className="font-semibold text-gray-600">Bill Summary</p>
-              <div className="flex flex-col gap-2 mt-2 border-b border-gray-200 pb-3">
+
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-400">Item total (MRP)</p>
-                  <p className="text-sm text-gray-400"> ₹{totalMRP(cart)}</p>
+                  <p className="text-sm text-gray-500">Item total (MRP)</p>
+                  <p className="text-sm text-gray-700 font-medium">
+                    ₹{totalMRP}
+                  </p>
                 </div>
+
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-[#64A39A] flex items-center gap-2">
-                    Total discount <FileQuestionIcon size={18} />
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    Total discount
+                    <HelpCircle size={13} />
                   </p>
-                  <p className="text-sm text-[#64A39A]"> - ₹327</p>
+                  <p className="text-sm text-green-600 font-medium">
+                    − ₹{totalDiscount}
+                  </p>
                 </div>
+
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-[#64A39A] flex items-center gap-2">
-                    Shipping fees
-                  </p>
-                  <p className="text-sm text-[#64A39A]">
-                    As per delivery address
-                  </p>
+                  <p className="text-sm text-gray-500">Shipping</p>
+                  <p className="text-sm text-gray-400">As per address</p>
                 </div>
               </div>
-              <div className="flex mt-2 items-center justify-between border-b-[5px] border-gray-200 pb-6">
-                <p className="font-semibold text-sm text-gray-600">
-                  To be paid{" "}
+
+              {/* Total */}
+              <div className="flex items-center justify-between px-5 py-4
+                              border-t border-gray-100 bg-gray-50">
+                <p className="text-sm font-semibold text-gray-800">
+                  To be paid
                 </p>
-                <p className="font-semibold text-sm text-gray-600">
-                  ₹{totalMRP(cart)}
+                <p className="text-base font-bold text-gray-800">
+                  ₹{totalPayable}
                 </p>
               </div>
-              <div className="flex items-center justify-between mt-6 border-b-[5px] border-gray-200 pb-6">
-                <div className="flex items-center justify-between gap-2">
-                  <IoHomeOutline size={20} />
-                  <p className="font-semibold  text-gray-600">Delivering to</p>
-                </div>
-                <div>
-                  <p className="text-red-500 text-sm cursor-pointer transition-all hover:underline">
-                    Add Address{" "}
+
+              {/* Delivery address */}
+              <div className="flex items-center justify-between px-5 py-4
+                              border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Home size={15} className="text-gray-500" />
+                  <p className="text-sm font-medium text-gray-700">
+                    Delivering to
                   </p>
                 </div>
+                <button className="text-sm text-[#78355b] hover:underline
+                                   transition-colors font-medium">
+                  Add Address
+                </button>
               </div>
-              <Button
-                className="w-full bg-[#78355B] hover:bg-[#78355B] hover:opacity-95 mt-6 "
-                onClick={() => checkoutHandler(totalMRP(cart))}
-              >
-                proceed to payment
-              </Button>
+
+              {/* Checkout button */}
+              <div className="px-5 pb-5">
+                <button
+                  onClick={() => checkoutHandler(totalPayable)}
+                  className="w-full flex items-center justify-center gap-2
+                             py-3 bg-[#78355b] text-white text-sm font-medium
+                             rounded-xl hover:bg-[#6a2d50] transition-colors"
+                >
+                  Proceed to Payment
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+
             </div>
           </div>
+
         </div>
-      </WidthWrapper>
+      </div>
     </div>
   );
-}
-
-const totalMRP = (items: any) => {
-  return items.reduce((acc: number, ele: MRPInputProps) => {
-    return acc + ele.price * ele.quantity;
-  }, 0);
-};
-
-function textFormater(str: string, len: number) {
-  if (str.length < len) return str;
-  return str.substring(0, len) + "...";
 }

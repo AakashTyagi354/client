@@ -1,18 +1,31 @@
-import Users from "@/components/Users";
+// ─────────────────────────────────────────────────────────────────────────────
+// Doctor Documents Layout — /docdoc/**
+//
+// Sidebar shows list of patients who have appointments with this doctor.
+// Clicking a patient loads their documents in the main content area.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export default function Layout({
+import DoctorPatientSidebar from "@/components/DoctorPatientSidebar";
+
+export default function DocDocLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <>
-      <main className="flex">
-        <div className="min-w-[260px] flex flex-col gap-6 h-[700px] border-r my-12">
-          <Users />
-        </div>
-        <div className="flex-grow">{children}</div>
-      </main>
-    </>
+    <main className="flex min-h-screen bg-gray-50">
+
+      {/* Sidebar — patient list */}
+      <aside className="hidden md:flex flex-col w-64 flex-shrink-0 bg-white
+                        border-r border-gray-100 shadow-sm">
+        <DoctorPatientSidebar />
+      </aside>
+
+      {/* Main content — patient documents */}
+      <div className="flex-1 min-w-0 overflow-auto">
+        {children}
+      </div>
+
+    </main>
   );
 }
