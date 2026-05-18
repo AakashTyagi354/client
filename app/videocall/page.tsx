@@ -1,26 +1,10 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Video Call — Appointments Listing Page
-//
-// Shows upcoming appointments + history for user or doctor.
-//
-// Features:
-//   - Join button unlocks 5 min before slotStartTime
-//   - Active table: BOOKED appointments
-//   - History table: COMPLETED + CANCELLED appointments
-//
-// API:
-//   GET /api/v1/appointments/user?userId={id}     → user appointments
-//   GET /api/v1/appointments/doctor?doctorId={id} → doctor appointments
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectToken, selectUser } from "@/redux/userSlice";
 import {
   selectDoctor,
-  selectToken as selectDocToken,
 } from "@/redux/doctorSlice";
 import axiosInstance from "@/app/login/axiosInstance";
 import Link from "next/link";
@@ -33,11 +17,9 @@ import {
   LogIn,
   Lock,
   History,
+  Sparkles,
 } from "lucide-react";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+import MyConsultationReports from "@/components/MyConsultationReports";
 
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "—";
@@ -57,8 +39,6 @@ const formatTime = (dateStr: string | null): string => {
   });
 };
 
-// Returns true if current time is within 5 min before slotStartTime
-// and before slotEndTime
 const isJoinable = (
   slotStartTime: string | null,
   slotEndTime: string | null
@@ -68,31 +48,22 @@ const isJoinable = (
   const start = new Date(slotStartTime);
   const end = slotEndTime ? new Date(slotEndTime) : null;
   const fiveMinBefore = new Date(start.getTime() - 5 * 60 * 1000);
-
   if (end) return now >= fiveMinBefore && now <= end;
   return now >= fiveMinBefore;
 };
 
-// Returns time remaining until join unlocks e.g. "in 2h 30m"
 const getCountdown = (slotStartTime: string | null): string => {
   if (!slotStartTime) return "";
   const now = new Date();
   const start = new Date(slotStartTime);
   const fiveMinBefore = new Date(start.getTime() - 5 * 60 * 1000);
   const diff = fiveMinBefore.getTime() - now.getTime();
-
   if (diff <= 0) return "";
-
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
   if (hours > 0) return `in ${hours}h ${mins}m`;
   return `in ${mins}m`;
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STATUS BADGE
-// ─────────────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -107,10 +78,6 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// JOIN BUTTON — locked/unlocked based on slot time
-// ─────────────────────────────────────────────────────────────────────────────
 
 function JoinButton({
   appointmentId,
@@ -157,10 +124,6 @@ function JoinButton({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// APPOINTMENT TABLE — reusable for both active and history
-// ─────────────────────────────────────────────────────────────────────────────
-
 function AppointmentTable({
   appointments,
   idLabel,
@@ -172,7 +135,10 @@ function AppointmentTable({
   idField: "doctorId" | "userId";
   showJoin: boolean;
 }) {
-  const columns = ["#", idLabel, "Date", "Time", "Status", ...(showJoin ? ["Action"] : [])];
+  const columns = [
+    "#", idLabel, "Date", "Time", "Status",
+    ...(showJoin ? ["Action"] : []),
+  ];
 
   return (
     <table className="w-full">
@@ -193,7 +159,6 @@ function AppointmentTable({
         {appointments.map((appt, idx) => (
           <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
             <td className="px-4 py-3 text-xs text-gray-400">{idx + 1}</td>
-
             <td className="px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-[#78355b]/10
@@ -205,17 +170,15 @@ function AppointmentTable({
                 </span>
               </div>
             </td>
-
             <td className="px-4 py-3">
               <div className="flex items-center gap-1.5 text-sm text-gray-600">
                 <Calendar size={13} className="text-gray-400" />
                 {formatDate(appt.slotStartTime)}
               </div>
             </td>
-
             <td className="px-4 py-3">
               <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                <Clock size={13} className="text-gray-400" />
+                <Clock size={13} className="text-gray.400" />
                 {formatTime(appt.slotStartTime)}
                 {appt.slotEndTime && (
                   <span className="text-xs text-gray-400">
@@ -224,11 +187,9 @@ function AppointmentTable({
                 )}
               </div>
             </td>
-
             <td className="px-4 py-3">
               <StatusBadge status={appt.status} />
             </td>
-
             {showJoin && (
               <td className="px-4 py-3">
                 <JoinButton
@@ -245,10 +206,6 @@ function AppointmentTable({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// APPOINTMENT LIST — full page with active + history sections
-// ─────────────────────────────────────────────────────────────────────────────
-
 function AppointmentList({
   appointments,
   loading,
@@ -256,6 +213,7 @@ function AppointmentList({
   subtitle,
   idLabel,
   idField,
+  middleSection,
 }: {
   appointments: AppointmentResponse[];
   loading: boolean;
@@ -263,8 +221,8 @@ function AppointmentList({
   subtitle: string;
   idLabel: string;
   idField: "doctorId" | "userId";
+  middleSection?: React.ReactNode;
 }) {
-  // Split into active and history
   const active = appointments.filter((a) => a.status === "BOOKED");
   const history = appointments.filter(
     (a) => a.status === "COMPLETED" || a.status === "CANCELLED"
@@ -286,7 +244,7 @@ function AppointmentList({
         </div>
       )}
 
-      {/* No appointments at all */}
+      {/* No appointments */}
       {!loading && appointments.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20
                         bg-white rounded-2xl border border-gray-100">
@@ -303,7 +261,7 @@ function AppointmentList({
         </div>
       )}
 
-      {/* ── Active appointments ── */}
+      {/* ── Upcoming appointments ── */}
       {!loading && active.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100
                         shadow-sm overflow-hidden mb-6">
@@ -330,6 +288,9 @@ function AppointmentList({
           </div>
         </div>
       )}
+
+      {/* ── Middle section — consultation reports ── */}
+      {middleSection}
 
       {/* ── History ── */}
       {!loading && history.length > 0 && (
@@ -358,14 +319,9 @@ function AppointmentList({
           </div>
         </div>
       )}
-
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// USER APPOINTMENTS
-// ─────────────────────────────────────────────────────────────────────────────
 
 function UserAppointments() {
   const user = useSelector(selectUser);
@@ -403,13 +359,26 @@ function UserAppointments() {
       subtitle="Your upcoming and past appointments"
       idLabel="Doctor ID"
       idField="doctorId"
+      middleSection={
+        <div className="bg-white rounded-2xl border border-gray-100
+                        shadow-sm overflow-hidden mb-6">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center
+                          justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-[#78355b]" />
+              <span className="text-sm font-medium text-gray-700">
+                My Consultation Reports
+              </span>
+            </div>
+          </div>
+          <div className="p-4">
+            <MyConsultationReports />
+          </div>
+        </div>
+      }
     />
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DOCTOR APPOINTMENTS
-// ─────────────────────────────────────────────────────────────────────────────
 
 function DoctorAppointments() {
   const user = useSelector(selectUser);
@@ -451,10 +420,6 @@ function DoctorAppointments() {
     />
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function VideoCallPage() {
   const userToken = useSelector(selectToken);

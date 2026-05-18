@@ -1,21 +1,5 @@
 "use client";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Video Room Page — /videocall/[room]
-//
-// Fetches ZEGO token from backend then renders the meeting.
-//
-// API:
-//   GET /api/v1/appointments/video-token/{appointmentId}
-//   Headers: X-User-Id and X-Roles injected by Gateway automatically
-//   Response: ApiResponse<String> — token is res.data.data
-//
-// Fixes applied:
-//   - axiosInstance instead of axios
-//   - res.data.data instead of response.data.token — ApiResponse wrapper
-//   - Removed console.logs
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
@@ -23,8 +7,8 @@ import { useSelector } from "react-redux";
 import { selectUser, selectToken } from "@/redux/userSlice";
 import axiosInstance from "@/app/login/axiosInstance";
 import { Loader2, VideoOff } from "lucide-react";
+import ConsultationNotesPanel from "@/components/ConsultationNotesPanel";
 
-// Load ZegoMeeting client-side only — no SSR
 const ZegoMeeting = dynamic(() => import("../ZegoMeeting"), { ssr: false });
 
 export default function RoomPage() {
@@ -36,34 +20,22 @@ export default function RoomPage() {
   const [zegoToken, setZegoToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FETCH VIDEO TOKEN
-  // Fix: axiosInstance instead of axios
-  // Fix: res.data.data — ApiResponse<String> wraps token in .data
-  // Fix: X-User-Id and X-Roles injected by Gateway — no need to pass manually
-  // ─────────────────────────────────────────────────────────────────────────
-
   const fetchToken = useCallback(async () => {
     try {
       const res = await axiosInstance.get(
         `http://localhost:8089/api/v1/appointments/video-token/${roomID}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Fix: token is in res.data.data not res.data.token
       setZegoToken(res.data.data);
     } catch (err: any) {
-      console.error("Failed to get video token:", err);
       setError(err.response?.data?.message || "Failed to get video token");
     }
   }, [roomID, token]);
 
   useEffect(() => {
-    if (user && token && roomID) {
-      fetchToken();
-    }
+    if (user && token && roomID) fetchToken();
   }, [user, token, roomID, fetchToken]);
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center
@@ -80,7 +52,6 @@ export default function RoomPage() {
     );
   }
 
-  // Loading state
   if (!zegoToken) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center
@@ -91,5 +62,21 @@ export default function RoomPage() {
     );
   }
 
-  return <ZegoMeeting zegoToken={zegoToken} />;
+  return (
+    <>
+      {/* Video call — full screen */}
+      <ZegoMeeting zegoToken={zegoToken} />
+
+      {/* Consultation notes panel — only visible to doctor, floats over call */}
+      {user?.isDoctor && (
+        <ConsultationNotesPanel
+          appointmentId={Number(roomID)}
+          onSaveFinal={() => {
+            // Notes saved — doctor can end the call
+            // Panel shows success state automatically
+          }}
+        />
+      )}
+    </>
+  );
 }
