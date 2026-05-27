@@ -289,7 +289,7 @@ export default function DoctorsPage() {
       filtered.sort((a, b) => b.experience - a.experience);
     }
 
-    // FE-009 fix: removed fake 300ms setTimeout — no benefit, just added delay
+    // fix: removed fake 300ms setTimeout — no benefit, just added delay
     setIsLoading(false);
     setDocs(filtered);
     setCurrentPage(1);
