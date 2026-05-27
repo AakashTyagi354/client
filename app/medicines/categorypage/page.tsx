@@ -3,7 +3,7 @@
 import WidthWrapper from "@/components/WidthWrapper";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { IoIosArrowForward } from "react-icons/io";
+import { ChevronRight } from "lucide-react";
 export default function Page() {
   const [categories, setCategories] = useState([]);
   const getCategories = async () => {
@@ -36,7 +36,7 @@ export default function Page() {
                       className="my-4 cursor-pointer text-gray-500 border-b border-gray-200 flex items-center pb-4 gap-4"
                       key={idx}
                     >
-                      <IoIosArrowForward />
+                      <ChevronRight size={16} />
                       {ele.name}
                     </p>
                   ))}

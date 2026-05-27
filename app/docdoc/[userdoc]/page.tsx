@@ -224,7 +224,7 @@ export default function PatientDocumentsPage() {
             No documents uploaded
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            This patient hasn't uploaded any documents yet
+            This patient has not uploaded any documents yet
           </p>
         </div>
       )}

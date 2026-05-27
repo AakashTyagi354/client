@@ -322,7 +322,7 @@ export default function MedicinesPage() {
             )}
             {noMore && products.length > 0 && (
               <p className="text-sm text-gray-400">
-                You've seen all products
+                You have seen all products
               </p>
             )}
           </div>

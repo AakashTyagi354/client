@@ -142,7 +142,7 @@ export default function MyConsultationReports() {
                   <p className="text-[10px] text-gray-400 mt-3 pt-3
                                 border-t border-gray-100 leading-relaxed">
                     AI-generated summary of your consultation.
-                    Always follow your doctor's direct advice.
+                    Always follow your doctor direct advice.
                   </p>
                 </>
               ) : (

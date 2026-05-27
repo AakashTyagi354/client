@@ -126,7 +126,7 @@ export default function ApplyDoc() {
       }
 
       const res = await axiosInstance.post(
-        "http://localhost:8089/api/v1/doctor/apply",
+        'http://localhost:8089/api/v1/doctor/apply',
         {
           name: firstname,          // Backend uses 'name' for firstName
           lastName: lastname,
@@ -145,7 +145,7 @@ export default function ApplyDoc() {
 
       if (res.data.success) {
         setSubmitted(true);
-        toast({ description: "Application submitted! You'll be notified once approved." });
+        toast({ description: "Application submitted! You will be notified once approved." });
 
         // Logout and redirect — doctor account requires separate login
         setTimeout(async () => {
@@ -203,7 +203,7 @@ export default function ApplyDoc() {
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Apply as a Doctor</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Join Delma's verified network of specialists
+            Join Delma verified network of specialists
           </p>
         </div>
 

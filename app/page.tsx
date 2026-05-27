@@ -120,7 +120,7 @@ const BENEFITS = [
 const FAQS = [
   {
     q: "What is online doctor consultation?",
-    a: "Online doctor consultation connects patients and doctors virtually. It's a convenient way to get medical advice using Delma's platform — no travel required, same quality of care.",
+    a: "Online doctor consultation connects patients and doctors virtually. It is a convenient way to get medical advice using Delma platform — no travel required, same quality of care.",
   },
   {
     q: "Are the doctors on Delma qualified?",
@@ -131,12 +131,12 @@ const FAQS = [
     a: "Absolutely. All consultations are protected with AES-256 encryption and our platform is compliant with industry privacy standards. Your health data is never shared without your consent.",
   },
   {
-    q: "What if I don't get a response from a doctor?",
-    a: "In the unlikely event that a doctor doesn't respond within the promised time, you are entitled to a 100% refund — no questions asked.",
+    q: "What if I do not get a response from a doctor?",
+    a: "In the unlikely event that a doctor does not respond within the promised time, you are entitled to a 100% refund — no questions asked.",
   },
   {
     q: "How do I book an appointment?",
-    a: "Select a doctor from our listings or use the AI symptom checker, pick an available time slot, complete payment via Razorpay, and you're confirmed. The whole process takes under 2 minutes.",
+    a: "Select a doctor from our listings or use the AI symptom checker, pick an available time slot, complete payment via Razorpay, and you are confirmed. The whole process takes under 2 minutes.",
   },
 ];
 

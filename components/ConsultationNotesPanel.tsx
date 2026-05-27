@@ -357,7 +357,7 @@ function MedicationSearch({ onAdd }: { onAdd: (drug: DrugResult) => void }) {
                        py-1.5 border border-[#78355b]/20 rounded-lg
                        hover:bg-[#78355b]/5 transition"
           >
-            + Add "{query}" manually
+            + Add {query} manually
           </button>
         </div>
       )}

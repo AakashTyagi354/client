@@ -1,6 +1,6 @@
 
-import Link from "next/link";
-import { FaCode, FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
+
+import { Linkedin, Github, Twitter, Code2 } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -50,7 +50,7 @@ export default function Footer() {
               >
                 <span className="sr-only"> LinkedIn </span>
 
-                <FaLinkedin size={25} />
+                <Linkedin size={25} />
               </a>
 
               <a
@@ -61,7 +61,7 @@ export default function Footer() {
               >
                 <span className="sr-only"> GitHub </span>
 
-                <FaGithub size={25} />
+                <Github size={25} />
               </a>
 
               <a
@@ -72,7 +72,7 @@ export default function Footer() {
               >
                 <span className="sr-only"> Twitter </span>
 
-               <FaTwitter size={25}/>
+                <Twitter size={25} />
               </a>
 
               <a
@@ -82,11 +82,10 @@ export default function Footer() {
                 rel="noreferrer"
               >
                 <span className="sr-only"> LeetCode </span>
-
-                <FaCode size={25}/>
+                <Code2 size={25} />
               </a>
 
-             
+
             </div>
           </div>
 
