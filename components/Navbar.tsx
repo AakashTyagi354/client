@@ -14,6 +14,14 @@
 //   DELETE /api/v1/notifications/delete/{id}     → delete single by UUID
 //
 // Auth: JWT from Redux store
+//
+// Changes:
+//   FE-008: Added 5-minute client-side notification cache.
+//           Module-level cache (not useState) so it survives Navbar re-mounts
+//           on navigation. Cache is invalidated on delete/clear so UI stays
+//           consistent after user actions.
+//   FE-004: Removed all hardcoded localhost:8089 URLs — using axiosInstance
+//           baseURL which reads from NEXT_PUBLIC_API_URL env var.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -84,6 +92,32 @@ interface Notification {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FE-008: MODULE-LEVEL NOTIFICATION CACHE
+//
+// Why module-level and not useState?
+// useState resets every time the component unmounts and remounts.
+// In Next.js, navigating between pages can remount the Navbar depending on
+// the layout. A module-level variable lives for the entire browser session —
+// it survives component re-mounts, so the cache actually works across pages.
+//
+// Structure:
+//   data      — the last fetched notification list
+//   fetchedAt — timestamp of last successful fetch (0 = never fetched / stale)
+//
+// TTL: 5 minutes (CACHE_TTL_MS)
+// Invalidation: fetchedAt is reset to 0 after any delete or clear-all action,
+// forcing the next open to fetch fresh data. This keeps the UI consistent —
+// a deleted notification won't re-appear from a stale cache.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+const notificationCache: { data: Notification[]; fetchedAt: number } = {
+  data: [],
+  fetchedAt: 0,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -92,7 +126,6 @@ export default function Navbar() {
   const currentUser = useSelector(selectUser);
   const dispatch = useDispatch();
 
-  // Renamed from doctorToken — isDoctor is a boolean, not a token
   const isDoctor = currentUser?.isDoctor;
   const isAdmin = currentUser?.isAdmin;
   const isLoggedIn = !!token;
@@ -101,18 +134,45 @@ export default function Navbar() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FETCH NOTIFICATIONS
-  // Dep array: [token] — only re-runs on login/logout, not on navigation
+  // FETCH NOTIFICATIONS — with 5-minute cache
+  //
+  // Flow:
+  //   1. Check if cache is fresh (age < CACHE_TTL_MS)
+  //   2. If fresh → use cached data, skip API call
+  //   3. If stale → fetch from API, update cache + state
+  //
+  // Dep array [token]: re-runs on login/logout.
+  // On login: fetchedAt is 0 → always fetches fresh.
+  // On logout: token is null → returns early, notifications cleared via
+  //            cache invalidation in handleLogout.
   // ─────────────────────────────────────────────────────────────────────────
 
   const fetchNotifications = async () => {
     if (!token || !currentUser?.id) return;
+
+    const cacheAge = Date.now() - notificationCache.fetchedAt;
+    const isCacheFresh = cacheAge < CACHE_TTL_MS;
+
+    if (isCacheFresh && notificationCache.data.length > 0) {
+      // Cache hit — serve from memory, no API call
+      setNotifications(notificationCache.data);
+      return;
+    }
+
+    // Cache miss or stale — fetch from API
     try {
+      // FE-004 fix: removed hardcoded localhost:8089
+      // axiosInstance.baseURL reads from NEXT_PUBLIC_API_URL in .env.local
       const res = await axiosInstance.get(
-        `http://localhost:8089/api/v1/notifications/user/${currentUser.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `/api/v1/notifications/user/${currentUser.id}`
       );
-      setNotifications(res.data.data || []);
+      const fresh = res.data.data || [];
+
+      // Update cache
+      notificationCache.data = fresh;
+      notificationCache.fetchedAt = Date.now();
+
+      setNotifications(fresh);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
@@ -124,18 +184,24 @@ export default function Navbar() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // DELETE SINGLE NOTIFICATION
-  // Fix: was using wrong URL with index — correct endpoint uses UUID
+  //
+  // After delete:
+  //   1. Remove from local state immediately (optimistic UI — no loading flash)
+  //   2. Invalidate cache — next bell open fetches fresh from API
+  //      This prevents the deleted item reappearing from a stale cache.
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleDeleteNotification = async (id: string) => {
     setDeletingId(id);
     try {
-      await axiosInstance.delete(
-        `http://localhost:8089/api/v1/notifications/delete/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      // Remove from local state — no need to refetch entire list
+      // FE-004 fix: removed hardcoded localhost:8089
+      await axiosInstance.delete(`/api/v1/notifications/delete/${id}`);
+
+      // Optimistic update — remove from UI immediately
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+      // Invalidate cache so next fetch gets fresh server state
+      notificationCache.fetchedAt = 0;
     } catch (err) {
       console.error("Failed to delete notification:", err);
     } finally {
@@ -145,20 +211,23 @@ export default function Navbar() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // CLEAR ALL NOTIFICATIONS
-  // Deletes all one by one — no bulk delete endpoint exists yet
+  // Deletes all in parallel — no bulk delete endpoint exists yet.
+  // Invalidates cache after clearing.
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleClearAll = async () => {
     try {
+      // FE-004 fix: removed hardcoded localhost:8089
       await Promise.all(
         notifications.map((n) =>
-          axiosInstance.delete(
-            `http://localhost:8089/api/v1/notifications/delete/${n.id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
+          axiosInstance.delete(`/api/v1/notifications/delete/${n.id}`)
         )
       );
       setNotifications([]);
+
+      // Invalidate cache — list is now empty on server
+      notificationCache.data = [];
+      notificationCache.fetchedAt = 0;
     } catch (err) {
       console.error("Failed to clear notifications:", err);
     }
@@ -166,22 +235,25 @@ export default function Navbar() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // LOGOUT
+  // FE-004 fix: removed hardcoded localhost:8089
+  // Also clears notification cache on logout so next user starts fresh
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleLogout = async () => {
     try {
       await axiosInstance.post(
-        "http://localhost:8089/auth/logout",
+        "/auth/logout",
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      // Clear Redux state regardless of API result
+      // Clear notification cache on logout
+      // Next user who logs in gets their own fresh notifications
+      notificationCache.data = [];
+      notificationCache.fetchedAt = 0;
+
       dispatch(clearUser());
       dispatch(clearDoctor());
     }
@@ -206,8 +278,7 @@ export default function Navbar() {
         {/* ── Desktop nav ── */}
         <div className="hidden md:flex flex-1 items-center ml-6">
 
-          {/* Nav links */}
-           <nav className="flex items-center flex-1 justify-center">
+          <nav className="flex items-center flex-1 justify-center">
             {activeLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <Button variant="ghost" className="text-sm text-gray-600
@@ -220,7 +291,6 @@ export default function Navbar() {
 
           {/* Right side: bell + auth */}
           <div className="flex items-center gap-2 flex-shrink-0">
-
 
             {/* Notification bell — only show when logged in */}
             {isLoggedIn && (
@@ -373,7 +443,6 @@ export default function Navbar() {
                 <SheetDescription asChild>
                   <div className="flex flex-col mt-8 gap-1">
 
-                    {/* Mobile nav links */}
                     {activeLinks.map((link) => (
                       <Link
                         key={link.href}

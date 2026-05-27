@@ -3,30 +3,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // DOCTORS PAGE — Delma Health Platform
 //
-// This page handles:
-//   1. Fetching and displaying all approved doctors
-//   2. AI-powered symptom checker (Groq AI via /api/v1/ai/symptom-check)
-//   3. Manual search with debouncing (500ms delay)
-//   4. Filter by specialization, gender, experience sort
-//   5. Date picker for slot availability check
-//   6. Razorpay payment flow for appointment booking
-//   7. Slot selection modal
-//   8. Pagination (6 doctors per page)
-//
-// Key state:
-//   docs            — currently displayed doctors (may be filtered/sorted)
-//   originalDocs    — unmodified full list, always used as filter source
-//   memoizedDocs    — memoized version of docs for performance
-//   availableSlots  — slots returned for a selected doctor+date
-//   selectedSlotId  — slot chosen by user
-//   activeDoctor    — doctor currently being booked
-//   aiResult        — AI symptom analysis result
+// Changes from previous version:
+//   - Removed antd DatePicker (was 300KB bundle cost) → native <input type="date">
+//   - Removed dayjs (no longer needed — input gives "YYYY-MM-DD" string natively)
+//   - Removed react-datepicker CSS import (unused)
+//   - Removed hydration guard (was only needed for antd SSR issue)
+//   - startDate state changed from Date | null → string
+//   - handleAvailabilityCheck no longer calls dayjs().format() — string used directly
+//   - DoctorCard calls onDateChange prop, not setStartDate (was out of scope)
+//   - DoctorCardProps interface updated to string types
+//   - Removed duplicate currentUser selector — use user instead
+//   - handleBookAppointment uses user?.id instead of currentUser?.id
+//   - RAZORPAY_KEY moved to process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+//   - FE-009: removed fake 300ms setTimeout from handleFilter
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DatePicker } from "antd";
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import Image from "next/image";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -47,9 +39,6 @@ import { selectToken, selectUser } from "@/redux/userSlice";
 import homeImg from "../../public/images/img2.svg";
 import img3 from "../../public/images/img3.jpeg";
 import helpImg from "../../public/images/helpimg.png";
-import "react-datepicker/dist/react-datepicker.css";
-
-dayjs.extend(customParseFormat);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -57,8 +46,10 @@ dayjs.extend(customParseFormat);
 
 const POSTS_PER_PAGE = 6;
 const SEARCH_DEBOUNCE_MS = 500;
-const DATE_FORMAT = "YYYY-MM-DD";
-const RAZORPAY_KEY = "rzp_test_S9jVkGSiveLNXR"; // TODO: move to .env.local
+
+// FE-001 fix: moved from hardcoded string to environment variable
+// Add NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_... to .env.local
+const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
 const SPECIALIZATIONS = [
   "Orthopedics", "Internal Medicine", "Obstetrics and Gynecology",
@@ -87,9 +78,27 @@ const FAQ_ITEMS = [
 // UTILITY FUNCTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Returns today's date as "YYYY-MM-DD" string.
+// Used as defaultValue and min for <input type="date">.
+// This format is exactly what the backend expects — no conversion needed.
 function getTodaysDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPE DEFINITIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DoctorInputProps {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  specialization: string;
+  gender: string;
+  experience: number;
+  feesPerConsultation: number;
+  address?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,7 +108,6 @@ function getTodaysDate(): string {
 export default function DoctorsPage() {
   const token = useSelector(selectToken);
   const user = useSelector(selectUser);
-  const currentUser = useSelector(selectUser);
   const { toast } = useToast();
 
   // ── Doctor list state ──
@@ -112,8 +120,10 @@ export default function DoctorsPage() {
   const memoizedDocs = useMemo(() => docs, [docs]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ── Date selection state ──
-  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  // FE-006 fix: startDate is now a plain "YYYY-MM-DD" string.
+  // Previously was Date | null to match antd DatePicker's onChange type.
+  // Native <input type="date"> returns a string directly — no conversion needed.
+  const [startDate, setStartDate] = useState<string>(getTodaysDate());
 
   // ── Slot booking modal state ──
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
@@ -150,22 +160,17 @@ export default function DoctorsPage() {
   // ── FAQ state ──
   const [faq, setFaq] = useState(FAQ_ITEMS);
 
-  // ── Hydration guard — prevents SSR/CSR mismatch with antd DatePicker ──
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-
   // ─────────────────────────────────────────────────────────────────────────
   // DATA FETCHING
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Fetch all approved doctors on mount
   useEffect(() => {
     const fetchDoctors = async () => {
       setIsLoading(true);
       try {
         const res = await axiosInstance.get("/api/users/doctors");
         setDocs(res.data.data);
-        setOriginalDocs(res.data.data); // Always save original for filter resets
+        setOriginalDocs(res.data.data);
       } catch (err) {
         console.error("Failed to fetch doctors:", err);
         toast({ variant: "destructive", title: "Could not load doctors" });
@@ -225,12 +230,10 @@ export default function DoctorsPage() {
     setAiLoading(true);
     setAiResult(null);
     try {
-      // Step 1: Ask AI for specialization recommendation
       const aiRes = await axiosInstance.post("/api/v1/ai/symptom-check", { symptoms });
       const result = aiRes.data.data;
       setAiResult(result);
 
-      // Step 2: Filter doctors by returned specialization
       const doctorRes = await axiosInstance.get(`/api/v1/doctor/search/${result.specialization}`);
       const filtered = doctorRes.data.data || [];
       setDocs(filtered);
@@ -252,11 +255,10 @@ export default function DoctorsPage() {
     }
   };
 
-  // Clears AI filter and restores original full doctor list
   const handleClearAiFilter = async () => {
     const res = await axiosInstance.get("/api/users/doctors");
     setDocs(res.data.data);
-    setOriginalDocs(res.data.data); // Reset originalDocs too in case AI changed it
+    setOriginalDocs(res.data.data);
     setAiResult(null);
     setSymptoms("");
     setCurrentPage(1);
@@ -273,7 +275,7 @@ export default function DoctorsPage() {
 
   const handleFilter = () => {
     setIsLoading(true);
-    let filtered = [...originalDocs]; // ← Always start from the full unfiltered list
+    let filtered = [...originalDocs];
 
     if (selectedSpecialization) {
       filtered = filtered.filter(d => d.specialization === selectedSpecialization);
@@ -287,12 +289,12 @@ export default function DoctorsPage() {
       filtered.sort((a, b) => b.experience - a.experience);
     }
 
-    setTimeout(() => setIsLoading(false), 300);
+    // FE-009 fix: removed fake 300ms setTimeout — no benefit, just added delay
+    setIsLoading(false);
     setDocs(filtered);
     setCurrentPage(1);
   };
 
-  // Resets all filters and restores the full doctor list
   const handleClearFilters = () => {
     setDocs(originalDocs);
     setSelectedSpecialization("");
@@ -303,7 +305,6 @@ export default function DoctorsPage() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // SLOT AVAILABILITY CHECK
-  // Fetches available time slots for a given doctor and date
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleAvailabilityCheck = async (
@@ -313,13 +314,16 @@ export default function DoctorsPage() {
   ) => {
     setIsLoading(true);
     try {
-      const dateStr = startDate ? dayjs(startDate).format(DATE_FORMAT) : getTodaysDate();
+      // FE-006 fix: startDate is already "YYYY-MM-DD" string — no dayjs needed.
+      // Previously: dayjs(startDate).format(DATE_FORMAT)
+      const dateStr = startDate || getTodaysDate();
+
       const res = await axiosInstance.get("/api/v1/appointments/slots", {
         params: { doctorId, date: dateStr },
       });
       setAvailableSlots(res.data.data || []);
       setActiveDoctor({ id: doctorId, name: firstName, fees: doctor.feesPerConsultation });
-      setSelectedSlotId(null); // Clear any previously selected slot
+      setSelectedSlotId(null);
       setIsSlotModalOpen(true);
     } catch (err) {
       console.error("Slot fetch failed:", err);
@@ -334,13 +338,12 @@ export default function DoctorsPage() {
   //
   // 1. POST /api/v1/payments/create  → get Razorpay order ID
   // 2. Open Razorpay checkout modal
-  // 3. On payment success → POST /api/v1/payments/verify (signature check)
+  // 3. On payment success → POST /api/v1/payments/verify (HMAC-SHA256 check)
   // 4. On verification success → POST /api/v1/appointments/book
   // ─────────────────────────────────────────────────────────────────────────
 
   const loadRazorpayScript = () => {
     return new Promise<void>((resolve) => {
-      // Avoid injecting the script multiple times
       if (document.querySelector('script[src*="razorpay"]')) {
         resolve();
         return;
@@ -356,15 +359,13 @@ export default function DoctorsPage() {
     if (!selectedSlotId || !activeDoctor) return;
 
     try {
-      // Step 1: Create Razorpay order on backend
       const createRes = await axiosInstance.post("/api/v1/payments/create", {
-        amount: activeDoctor.fees * 100, // Razorpay expects paise (₹1 = 100 paise)
+        amount: activeDoctor.fees * 100,
         refId: `SLOT_${selectedSlotId}`,
         sourceType: "APPOINTMENT",
       });
       const rzpOrderId = createRes.data.data;
 
-      // Step 2: Open Razorpay modal
       await loadRazorpayScript();
 
       const options = {
@@ -375,7 +376,6 @@ export default function DoctorsPage() {
         description: `Consultation with Dr. ${activeDoctor.name}`,
         order_id: rzpOrderId,
         handler: async (response: any) => {
-          // Step 3: Verify payment signature
           try {
             const verifyRes = await axiosInstance.post("/api/v1/payments/verify", {
               orderId: response.razorpay_order_id,
@@ -384,7 +384,7 @@ export default function DoctorsPage() {
             });
             if (verifyRes.status === 200) {
               toast({ description: "Payment successful! Booking your appointment..." });
-              await handleBookAppointment(); // Step 4: Book the slot
+              await handleBookAppointment();
             }
           } catch (err) {
             toast({ variant: "destructive", description: "Payment verification failed." });
@@ -404,20 +404,21 @@ export default function DoctorsPage() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // APPOINTMENT BOOKING
-  // Called after payment is verified. Sends slot + doctor + user IDs.
+  // Called after payment is verified.
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleBookAppointment = async () => {
     if (!selectedSlotId || !activeDoctor) return;
 
     try {
-      const res = await axios.post(
-        "http://localhost:8089/api/v1/appointments/book",
-        null, // No request body — params sent as query strings
+      const res = await axiosInstance.post(
+        "/api/v1/appointments/book",
+        null,
         {
-          headers: { Authorization: `Bearer ${token}` },
           params: {
-            userId: currentUser?.id,
+            // FE-010 fix: removed duplicate currentUser selector
+            // was: currentUser?.id  now: user?.id
+            userId: user?.id,
             doctorId: activeDoctor.id,
             slotId: selectedSlotId,
           },
@@ -436,19 +437,14 @@ export default function DoctorsPage() {
     }
   };
 
-  // ── FAQ accordion toggle ──
   const toggleFaq = (idx: number) => {
     setFaq(prev =>
       prev.map((item, i) => (i === idx ? { ...item, show: !item.show } : item))
     );
   };
 
-  // Prevent SSR hydration mismatch — antd DatePicker is client-only
-  if (!hydrated) return null;
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
+  // Note: hydration guard removed — it was only needed for antd DatePicker's
+  // SSR mismatch. Native <input type="date"> has no SSR issues.
 
   return (
     <>
@@ -464,7 +460,6 @@ export default function DoctorsPage() {
               objectPosition="center"
               alt="Delma Health"
             />
-            {/* Gradient overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#78355b]/60 to-[#78355b]/80" />
 
             <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
@@ -475,7 +470,6 @@ export default function DoctorsPage() {
                 Find the right specialist, book instantly, consult securely
               </p>
 
-              {/* Debounced doctor search with autocomplete dropdown */}
               <div className="w-full max-w-lg relative search-container">
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3">
                   <Search size={18} className="text-white/60 flex-shrink-0" />
@@ -497,7 +491,6 @@ export default function DoctorsPage() {
                   )}
                 </div>
 
-                {/* Search results dropdown */}
                 {showSearchDropdown && searchResults.length > 0 && (
                   <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-2xl overflow-hidden z-50 max-h-72 overflow-y-auto">
                     {searchResults.map((doctor, idx) => (
@@ -513,12 +506,13 @@ export default function DoctorsPage() {
                             <p className="text-xs text-[#78355b]">{doctor.specialization}</p>
                           </div>
                           <div className="flex flex-col gap-1 items-end">
-                            <DatePicker
-                              defaultValue={dayjs(getTodaysDate(), DATE_FORMAT)}
-                              minDate={dayjs(getTodaysDate(), DATE_FORMAT)}
-                              onChange={(date: any) => setStartDate(date)}
-                              format={DATE_FORMAT}
-                              size="small"
+                            <input
+                              type="date"
+                              defaultValue={getTodaysDate()}
+                              min={getTodaysDate()}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="text-xs border border-gray-200 rounded-lg px-2 py-1
+                                         focus:outline-none focus:border-[#78355b] text-gray-700"
                             />
                             <Button
                               size="sm"
@@ -543,7 +537,6 @@ export default function DoctorsPage() {
         <WidthWrapper>
           <div className="flex gap-6 py-8">
 
-            {/* ── LEFT COLUMN: AI Checker + Filters + Doctor Cards ── */}
             <div className="flex-grow min-w-0">
 
               {/* AI Symptom Checker */}
@@ -584,7 +577,6 @@ export default function DoctorsPage() {
                   </Button>
                 </div>
 
-                {/* AI result — shown after successful analysis */}
                 {aiResult && (
                   <div className="mt-4 p-4 bg-[#78355b]/5 rounded-xl border border-[#78355b]/15">
                     <div className="flex items-start justify-between gap-2">
@@ -615,10 +607,6 @@ export default function DoctorsPage() {
                     <span className="text-xs font-semibold uppercase tracking-wide">Filter</span>
                   </div>
 
-                  {/*
-                    Controlled selects — value prop ensures they visually reset
-                    when handleClearFilters is called
-                  */}
                   <select
                     value={selectedSpecialization}
                     onChange={e => setSelectedSpecialization(e.target.value)}
@@ -658,7 +646,6 @@ export default function DoctorsPage() {
                     Apply
                   </Button>
 
-                  {/* Clear button — only shows when at least one filter is active */}
                   {(selectedSpecialization || selectedGender || selectedSortBy) && (
                     <Button
                       onClick={handleClearFilters}
@@ -670,7 +657,6 @@ export default function DoctorsPage() {
                     </Button>
                   )}
 
-                  {/* Shows filtered count vs total */}
                   <span className="ml-auto text-xs text-gray-400">
                     {memoizedDocs.length} of {originalDocs.length} doctor{originalDocs.length !== 1 ? "s" : ""}
                   </span>
@@ -701,7 +687,6 @@ export default function DoctorsPage() {
                 </div>
               )}
 
-              {/* Pagination — only shown when there are more doctors than one page */}
               {memoizedDocs.length > POSTS_PER_PAGE && (
                 <PaginationBar
                   total={memoizedDocs.length}
@@ -712,7 +697,7 @@ export default function DoctorsPage() {
               )}
             </div>
 
-            {/* ── RIGHT SIDEBAR: About + FAQ ── */}
+            {/* ── RIGHT SIDEBAR ── */}
             <div className="w-72 flex-shrink-0 hidden lg:block">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-6">
                 <Image
@@ -775,7 +760,7 @@ export default function DoctorsPage() {
             <p className="text-sm text-gray-500 mt-1">
               Booking with{" "}
               <span className="font-medium text-[#78355b]">Dr. {activeDoctor?.name}</span>
-              {" "}for {startDate ? dayjs(startDate).format("DD MMM YYYY") : "Today"}
+              {" "}for {startDate}
             </p>
             {activeDoctor && (
               <p className="text-xs text-gray-400 mt-0.5">
@@ -785,7 +770,6 @@ export default function DoctorsPage() {
             )}
           </DialogHeader>
 
-          {/* Slot grid */}
           <div className="grid grid-cols-3 gap-2 my-5 max-h-56 overflow-y-auto">
             {availableSlots.length > 0 ? (
               availableSlots.map(slot => (
@@ -811,7 +795,6 @@ export default function DoctorsPage() {
             )}
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t border-gray-100">
             <Button
               variant="outline"
@@ -836,14 +819,19 @@ export default function DoctorsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOCTOR CARD COMPONENT
-// Renders a single doctor's info with date picker and availability button.
-// Extracted as a separate component to keep the main page readable.
+//
+// FE-006 fix: onDateChange now typed as (date: string) => void
+// Previously: (date: Date | null) => void to match antd DatePicker
+// Now: onChange gives e.target.value which is a plain "YYYY-MM-DD" string
+//
+// Bug fix: input now calls onDateChange (the prop), not setStartDate
+// setStartDate lives in the parent — it is not in scope inside DoctorCard
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface DoctorCardProps {
   doctor: DoctorInputProps;
-  startDate: Date | null;
-  onDateChange: (date: Date | null) => void;
+  startDate: string;
+  onDateChange: (date: string) => void;
   onCheckAvailability: (id: number, name: string, doctor: DoctorInputProps) => void;
 }
 
@@ -851,7 +839,6 @@ function DoctorCard({ doctor, startDate, onDateChange, onCheckAvailability }: Do
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5 flex gap-4">
 
-      {/* Doctor avatar — hidden on mobile */}
       <div className="w-20 h-20 rounded-xl overflow-hidden bg-[#78355b]/10 flex-shrink-0 hidden md:block">
         <Image
           src={img3}
@@ -862,7 +849,6 @@ function DoctorCard({ doctor, startDate, onDateChange, onCheckAvailability }: Do
         />
       </div>
 
-      {/* Doctor info */}
       <div className="flex-grow min-w-0">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
@@ -891,16 +877,16 @@ function DoctorCard({ doctor, startDate, onDateChange, onCheckAvailability }: Do
         </div>
       </div>
 
-      {/* Action column — date picker + availability button */}
       <div className="flex-shrink-0 flex flex-col gap-2 items-end justify-center">
         <div>
           <p className="text-[10px] text-gray-400 font-medium mb-1 text-right">SELECT DATE</p>
-          <DatePicker
-            defaultValue={dayjs(getTodaysDate(), DATE_FORMAT)}
-            minDate={dayjs(getTodaysDate(), DATE_FORMAT)}
-            onChange={(date: any) => onDateChange(date)}
-            format={DATE_FORMAT}
-            size="small"
+          <input
+            type="date"
+            defaultValue={getTodaysDate()}
+            min={getTodaysDate()}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-2 py-1
+                       focus:outline-none focus:border-[#78355b] text-gray-700"
           />
         </div>
         <Button
@@ -917,7 +903,6 @@ function DoctorCard({ doctor, startDate, onDateChange, onCheckAvailability }: Do
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGINATION COMPONENT
-// Simple numbered pagination with prev/next arrows.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface PaginationBarProps {
