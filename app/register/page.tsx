@@ -19,7 +19,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import {
   Heart, User, Mail, Lock, Eye, EyeOff,
   ArrowRight, ArrowLeft, ShieldCheck, RefreshCw
@@ -28,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
+import axiosInstance from "../login/axiosInstance";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REGISTER PAGE COMPONENT
@@ -62,7 +62,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8089/auth/signup", {
+      const res = await axiosInstance.post("/auth/signup", {
         name: username,
         email,
         password,
@@ -97,7 +97,7 @@ export default function RegisterPage() {
     }
     setOtpLoading(true);
     try {
-      const res = await axios.post("http://localhost:8089/auth/verify-otp", {
+      const res = await axiosInstance.post("/auth/verify-otp", {
         email,
         otp,
       });
@@ -127,7 +127,7 @@ export default function RegisterPage() {
   const handleResendOtp = async () => {
     setResendLoading(true);
     try {
-      const res = await axios.post("http://localhost:8089/auth/resend-otp", { email });
+      const res = await axiosInstance.post("/auth/resend-otp", { email });
       if (res.data.success === true) {
         toast({ description: "OTP resent. Check your email." });
         setOtp(""); // Clear old OTP so user enters the new one

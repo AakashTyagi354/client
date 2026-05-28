@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import MyConsultationReports from "@/components/MyConsultationReports";
+import axios from "axios";
 
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "—";
@@ -331,24 +332,28 @@ function UserAppointments() {
 
   useEffect(() => {
     if (!user?.id || !token) return;
+     const controller = new AbortController();
+
     const fetch = async () => {
       setLoading(true);
       try {
         const res = await axiosInstance.get<ApiResponse<AppointmentResponse[]>>(
-          "http://localhost:8089/api/v1/appointments/user",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { userId: user.id },
-          }
-        );
+  "/api/v1/appointments/user",  // ← relative path
+  {
+    params: { userId: user.id },
+    signal: controller.signal   // ← add this
+  }
+);
         setAppointments(res.data.data || []);
       } catch (err) {
+         if (axios.isCancel(err)) return;
         console.error("Failed to fetch appointments:", err);
       } finally {
         setLoading(false);
       }
     };
     fetch();
+    return () => controller.abort();
   }, [user, token]);
 
   return (
@@ -389,24 +394,27 @@ function DoctorAppointments() {
 
   useEffect(() => {
     if (!user?.id || !token) return;
+     const controller = new AbortController();
     const fetch = async () => {
       setLoading(true);
       try {
         const res = await axiosInstance.get<ApiResponse<AppointmentResponse[]>>(
-          "http://localhost:8089/api/v1/appointments/doctor",
+          "/api/v1/appointments/doctor",
           {
-            headers: { Authorization: `Bearer ${token}` },
             params: { doctorId: user.id },
+             signal: controller.signal 
           }
         );
         setAppointments(res.data.data || []);
       } catch (err) {
+        if (axios.isCancel(err)) return;
         console.error("Failed to fetch doctor appointments:", err);
       } finally {
         setLoading(false);
       }
     };
     fetch();
+    return () => controller.abort();
   }, [user, token]);
 
   return (

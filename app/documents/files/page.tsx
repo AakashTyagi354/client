@@ -16,6 +16,11 @@
 //   - Removed unused axios import — using axiosInstance
 //   - Removed dead Firebase imports
 //   - Added loading state
+//   - AbortController added to fetchDocuments useEffect
+//   - Removed const headers — axiosInstance interceptor handles auth
+//   - Removed selectToken — not needed, interceptor handles it
+//   - handleDelete uses relative path, no manual headers
+//   - token removed from useEffect dependency array
 //
 // Backend fix pending:
 //   - id and createdAt missing from DocumentResponse — tracked
@@ -23,8 +28,9 @@
 
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { selectToken, selectUser } from "@/redux/userSlice";
+import { selectUser } from "@/redux/userSlice";  // ← removed selectToken
 import axiosInstance from "@/app/login/axiosInstance";
+import axios from "axios";  // ← for axios.isCancel only
 import Link from "next/link";
 import {
   FileText,
@@ -45,7 +51,7 @@ import { toast } from "@/components/ui/use-toast";
 const truncate = (str: string, len: number): string =>
   str?.length > len ? str.substring(0, len) + "…" : str ?? "";
 
-const formatDate = (dateStr: string): string => {
+const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -67,50 +73,57 @@ const getFileIcon = (type: string) => {
 
 export default function FilesPage() {
   const user = useSelector(selectUser);
-  const token = useSelector(selectToken);
+  // ↑ removed: const token = useSelector(selectToken)
+  // axiosInstance interceptor attaches token automatically
 
   const [documents, setDocuments] = useState<DocumentInputProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const headers = { Authorization: `Bearer ${token}` };
-
   // ─────────────────────────────────────────────────────────────────────────
   // FETCH DOCUMENTS
+  // AbortController cancels in-flight request on unmount
+  // Prevents memory leak if user navigates away before response arrives
   // ─────────────────────────────────────────────────────────────────────────
 
-  const fetchDocuments = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const res = await axiosInstance.get(
-        `http://localhost:8089/api/v1/documents/getall-documents/${user.id}`,
-        { headers }
-      );
-      setDocuments(res.data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch documents:", err);
-      toast({ variant: "destructive", description: "Could not load documents" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    if (!user) return;
+
+    const controller = new AbortController();
+
+    const fetchDocuments = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosInstance.get(
+          `/api/v1/documents/getall-documents/${user.id}`,
+          { signal: controller.signal }
+          // ↑ no headers needed — axiosInstance interceptor handles auth
+        );
+        setDocuments(res.data.data || []);
+      } catch (err) {
+        if (axios.isCancel(err)) return; // ignore abort — not a real error
+        console.error("Failed to fetch documents:", err);
+        toast({ variant: "destructive", description: "Could not load documents" });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDocuments();
-  }, [user, token]);
+    return () => controller.abort(); // cleanup on unmount
+  }, [user]); // ← removed token from deps — not needed, interceptor handles it
 
   // ─────────────────────────────────────────────────────────────────────────
   // DELETE DOCUMENT
-  // Fix: filter from local state — delete returns ApiResponse<Void> no data
+  // Filter from local state — delete returns ApiResponse<Void>, no data
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleDelete = async (id: number) => {
     setDeletingId(id);
     try {
       const res = await axiosInstance.delete(
-        `http://localhost:8089/api/v1/documents/delete-document/${id}`,
-        { headers }
+        `/api/v1/documents/delete-document/${id}`
+        // ↑ relative path, no headers — interceptor handles auth
       );
       if (res.data.success) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== id));
@@ -236,16 +249,15 @@ export default function FilesPage() {
                 <p className="text-xs text-gray-400 mt-0.5 font-mono">
                   {doc.type}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                {/* <p className="text-xs text-gray-400 mt-0.5">
                   {formatDate(doc.createdAt)}
-                </p>
+                </p> */}
               </div>
 
               {/* Actions */}
               <div className="flex items-center justify-between mt-3 pt-3
                               border-t border-gray-100">
                 <a
-                
                   href={doc.url}
                   target="_blank"
                   rel="noopener noreferrer"

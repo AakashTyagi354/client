@@ -17,15 +17,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useSelector } from "react-redux";
-import { selectToken } from "@/redux/userSlice";
+
 import {
   Users, Stethoscope, Clock, CheckCircle,
   XCircle, Search, RefreshCw, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import axiosInstance from "../login/axiosInstance";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPE DEFINITIONS
@@ -56,7 +56,7 @@ interface DoctorData {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const token = useSelector(selectToken);
+ 
 
   // ── Data state ──
   const [users, setUsers] = useState<UserData[]>([]);
@@ -77,9 +77,8 @@ export default function Dashboard() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:8089/api/v1/admin/getall-users",
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.get(
+        "/api/v1/admin/getall-users"
       );
       setUsers(res.data.data || []);
     } catch (err) {
@@ -91,9 +90,8 @@ export default function Dashboard() {
   const fetchDoctors = async () => {
     try {
       // TODO: update to new microservice endpoint when ready
-      const res = await axios.get(
-        "http://localhost:8089/api/v1/admin/getall-doctors",
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.get(
+        "/api/v1/admin/getall-doctors"
       );
       setDoctors(res.data.data || []);
     } catch (err) {
@@ -118,10 +116,9 @@ export default function Dashboard() {
   const handleApproveDoctor = async (doctorId: number) => {
     setApprovingId(doctorId);
     try {
-      await axios.post(
-        "http://localhost:8089/api/v1/admin/approve-doctor",
-        { doctorId, status: "APPROVED" },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axiosInstance.post(
+        "/api/v1/admin/approve-doctor",
+        { doctorId, status: "APPROVED" }
       );
       toast({ description: "Doctor approved successfully." });
       // Refresh doctor list after approval

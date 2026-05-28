@@ -1,7 +1,8 @@
 import axios from "axios";
 import { store } from "@/redux/store";
-import { setUser } from "@/redux/userSlice";
-import router from "next/router";
+import { clearUser, setUser } from "@/redux/userSlice";
+import { clearDoctor } from "@/redux/doctorSlice";
+
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
@@ -16,7 +17,7 @@ const onRefreshed = (token: string) => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8089",
+  baseURL:process.env.NEXT_PUBLIC_API_URL || "http://localhost:8089",
   withCredentials: true,
 });
 
@@ -46,12 +47,12 @@ axiosInstance.interceptors.response.use(
 
         try {
           // Use standard 'axios' here to avoid interceptor loops
-          const refreshRes = await axios.post("http://localhost:8089/auth/refresh", {}, {
+          const refreshRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8089"}/auth/refresh`, {}, {
             withCredentials: true
           });
 
           const newAccessToken = refreshRes.data.data.accessToken;
-
+          
           store.dispatch(setUser({
             user: store.getState().user.user,
             token: newAccessToken
@@ -64,7 +65,11 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         } catch (err) {
           isRefreshing = false;
-          router.push("/login");
+          refreshSubscribers = [];
+          store.dispatch(clearUser());
+          store.dispatch(clearDoctor());
+
+          window.location.replace("/login");
           return Promise.reject(err);
         }
       }

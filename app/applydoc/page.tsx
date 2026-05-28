@@ -20,7 +20,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
@@ -82,11 +81,10 @@ export default function ApplyDoc() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(
-        "http://localhost:8089/auth/logout",
+      await axiosInstance.post(
+        "/auth/logout",
         {},
         {
-          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         }
       );
@@ -126,7 +124,7 @@ export default function ApplyDoc() {
       }
 
       const res = await axiosInstance.post(
-        'http://localhost:8089/api/v1/doctor/apply',
+        '/api/v1/doctor/apply',
         {
           name: firstname,          // Backend uses 'name' for firstName
           lastName: lastname,

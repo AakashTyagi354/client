@@ -165,13 +165,19 @@ export default function DoctorsPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
+
+     const controller = new AbortController();
+
     const fetchDoctors = async () => {
       setIsLoading(true);
       try {
-        const res = await axiosInstance.get("/api/users/doctors");
+        const res = await axiosInstance.get("/api/users/doctors", {
+  signal: controller.signal  // ← add this
+});
         setDocs(res.data.data);
         setOriginalDocs(res.data.data);
       } catch (err) {
+         if (axios.isCancel(err)) return;
         console.error("Failed to fetch doctors:", err);
         toast({ variant: "destructive", title: "Could not load doctors" });
       } finally {
@@ -179,28 +185,34 @@ export default function DoctorsPage() {
       }
     };
     fetchDoctors();
+    return () => controller.abort();
   }, []);
 
   // Debounced doctor search — waits 500ms after typing stops before calling API
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
+    const controller = new AbortController();
     searchTimeoutRef.current = setTimeout(async () => {
       if (searchQuery.trim() === "") {
         setSearchResults([]);
         return;
       }
       try {
-        const res = await axiosInstance.get(`/api/v1/doctor/search/${searchQuery}`);
+        const res = await axiosInstance.get(
+  `/api/v1/doctor/search/${searchQuery}`,
+  { signal: controller.signal }  // ← add this
+);
         setSearchResults(res.data.data || []);
       } catch (err) {
+          if (axios.isCancel(err)) return;
         console.error("Search failed:", err);
       }
     }, SEARCH_DEBOUNCE_MS);
 
     return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    };
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    controller.abort();
+  };
   }, [searchQuery]);
 
   // Close search dropdown when clicking outside the search container

@@ -24,18 +24,25 @@ const initialState: UserState = {
 const loadState = (): UserState => {
   try {
     const serializedState = localStorage.getItem("userState");
-    if (serializedState === null) {
+    if (!serializedState) {
       return initialState;
     }
-    return JSON.parse(serializedState);
-  } catch (err) {
+    const parsed = JSON.parse(serializedState);
+    
+    return {
+      user: parsed.user ?? null,  // only take what we need
+      token: null,                // token ALWAYS starts null
+    };
+
+  } catch{
     return initialState;
   }
 };
 
 const saveState = (state: UserState) => {
   try {
-    const serializedState = JSON.stringify(state);
+    const {token, ...rest} = state;
+    const serializedState = JSON.stringify(rest);
     localStorage.setItem("userState", serializedState);
   } catch {
     // Ignore write errors
