@@ -160,6 +160,8 @@ export default function DoctorsPage() {
   // ── FAQ state ──
   const [faq, setFaq] = useState(FAQ_ITEMS);
 
+
+
   // ─────────────────────────────────────────────────────────────────────────
   // DATA FETCHING
   // ─────────────────────────────────────────────────────────────────────────
@@ -369,12 +371,16 @@ export default function DoctorsPage() {
 
   const makePayment = async () => {
     if (!selectedSlotId || !activeDoctor) return;
+    const idempotencyKey = `${user?.id}_${activeDoctor.id}_${selectedSlotId}`;
+
 
     try {
       const createRes = await axiosInstance.post("/api/v1/payments/create", {
         amount: activeDoctor.fees * 100,
         refId: `SLOT_${selectedSlotId}`,
         sourceType: "APPOINTMENT",
+      }, {
+        headers: { "Idempotency-Key": idempotencyKey }, 
       });
       const rzpOrderId = createRes.data.data;
 
@@ -393,6 +399,9 @@ export default function DoctorsPage() {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id,
               signature: response.razorpay_signature,
+            },
+          {
+              headers: { "Idempotency-Key": idempotencyKey }, // ← THIS was missing
             });
             if (verifyRes.status === 200) {
               toast({ description: "Payment successful! Booking your appointment..." });
